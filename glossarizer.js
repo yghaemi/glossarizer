@@ -179,14 +179,14 @@
             style = document.createElement('style');
             style.id = 'gt-styles';
             style.textContent = [
-                '.gt-tooltip{max-width:280px;font-size:8px;line-height:1;color:#000;}',
+                '.gt-tooltip{max-width:280px;font-size:8px;line-height:1;color:#000; font-size:0.8rem; line-height:1; border-radius:0.5rem;}',
                 '.gt-img-wrap{margin-bottom:8px;display:flex;justify-content:center;flex-direction:column;}',
                 '.gt-caption{margin:4px 0 0;font-size:11px;color:#4f4545;text-align:center;}',
                 '.gt-definition{margin:0 0 6px;}',
                 '.gt-source{margin:4px 0;font-size:11px;color:#aaa;}',
                 '.gt-link{display:inline-block;margin-top:4px;font-size:12px;color:#4a90e2;text-decoration:none;}',
                 '.gt-link:hover{text-decoration:underline;}',
-                '.tippy-box[data-theme~="light"]{background-color:#4a90e2ff;}',
+                '.tippy-box[data-theme~="light"]{background-color:#4a90e2ff;  }',
                 '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;}'
             ].join('');
             document.head.appendChild(style);
