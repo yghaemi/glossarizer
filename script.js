@@ -7,7 +7,6 @@ const CACHE_TTL = 60 * 60 * 1000;
 // ---- Helpers ----
 function extract_library(hostname) {
     const parts = hostname.split(".");
-    return "dev";
     return parts?.[0]?.toLowerCase() ?? "dev";
 }
     
