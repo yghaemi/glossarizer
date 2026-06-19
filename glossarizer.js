@@ -187,7 +187,7 @@
                 '.gt-link{display:inline-block;margin-top:4px;font-size:12px;color:#4a90e2;text-decoration:none;}',
                 '.gt-link:hover{text-decoration:underline;}',
                 '.tippy-box[data-theme~="light"]{background-color:#4a90e2ff;  }',
-                '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;}'
+                '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;font-size:0.8rem; line-height:1;}'
             ].join('');
             document.head.appendChild(style);
         }
