@@ -186,7 +186,7 @@
                 '.gt-source{margin:4px 0;font-size:11px;color:#aaa;}',
                 '.gt-link{display:inline-block;margin-top:4px;font-size:12px;color:#4a90e2;text-decoration:none;}',
                 '.gt-link:hover{text-decoration:underline;}',
-                '.tippy-box[data-theme~="light"]{background-color:#4a90e2ff; border-radius:0.2rem; }',
+                '.tippy-box[data-theme~="light"]{background-color:#ffffff; border-radius:0.2rem;  border:1px solid #4a90e2;}',
                 '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;font-size:0.8rem; line-height:1;}'
             ].join('');
             document.head.appendChild(style);
