@@ -89,7 +89,7 @@ function renderTable(terms) {
  
 
     document.getElementById('glossary-output').innerHTML =
-        '<div id="visibleGlossary">' + rows  + '</div>';
+        '<div id="visibleGlossary"><h2>Glossary</h2>' + rows  + '</div>';
 
     requestAnimationFrame(function() {
     	requestAnimationFrame(function() {
