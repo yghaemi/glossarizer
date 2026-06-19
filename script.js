@@ -144,9 +144,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const pageId = pageIdEl.value;
+    console.log("--------------------------------pageId:", pageId);
     const library = extract_library(page_url);
     const url = API_HOST + "/api/v1/commons/glossary/page/" + pageId + "/library/" + library;
-
+    console.log("--------------------------------url:", url);
     function renderGlossary(data) {
         if (!data || !data.items || !data.items.length) {
             document.getElementById('glossary-output').textContent = 'No glossary terms found.';
