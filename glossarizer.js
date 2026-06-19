@@ -181,12 +181,12 @@
             style.textContent = [
                 '.gt-tooltip{max-width:280px;font-size:8px;line-height:1;color:#000; font-size:0.8rem; line-height:1; border-radius:0.5rem;}',
                 '.gt-img-wrap{margin-bottom:8px;display:flex;justify-content:center;flex-direction:column;}',
-                '.gt-caption{margin:4px 0 0;font-size:0.8rem!important;color:#4f4545;text-align:center;}',
+                '.gt-caption{margin:4px 0 0;font-size:0.8rem!important,font-weight:normal!important;color:#4f4545;text-align:center;}',
                 '.gt-definition{margin:0 0 6px; font-size:0.8rem!important; line-height:1.5!important; font-weight:normal!important;}',
                 '.gt-source{margin:4px 0;font-size:11px;color:#aaa;}',
                 '.gt-link{display:inline-block;margin-top:4px;font-size:12px;color:#4a90e2;text-decoration:none;}',
                 '.gt-link:hover{text-decoration:underline;}',
-                '.tippy-box[data-theme~="light"]{background-color:#4a90e2ff;  }',
+                '.tippy-box[data-theme~="light"]{background-color:#4a90e2ff; border-radius:0.2rem; }',
                 '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;font-size:0.8rem; line-height:1;}'
             ].join('');
             document.head.appendChild(style);
