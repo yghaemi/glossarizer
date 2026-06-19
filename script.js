@@ -82,7 +82,7 @@ function triggerMathJax() {
 function renderTable(terms) {
     var rows = terms.map(function (item) {
         return '<p class="glossaryElement">' +
-            '<span class="glossaryTerm">'       + unescapeLatex(item.term)       + '</span>' + '|' +
+            '<span class="glossaryTerm">'       + unescapeLatex(item.term)       + '</span>' + ' | ' +
             '<span class="glossaryDefinition">' + unescapeLatex(item.definition) + '</span>' +
         '</p>';
     }).join('');
