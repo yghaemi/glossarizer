@@ -75,16 +75,7 @@
         var host = (typeof API_HOST !== 'undefined' ? API_HOST : '').replace(/\/api.*/, '').replace(/\/$/, '');
         var parts = [];
 
-        if (item.imageUrl) {
-            parts.push(
-                '<div class="gt-img-wrap">' +
-                    '<img src="' + escapeHTML(host + item.imageUrl) + '"' +
-                    (item.altText ? ' alt="' + escapeHTML(item.altText) + '"' : '') +
-                    ' style="max-width:100%;border-radius:4px;" />' +
-                    (item.caption ? '<p class="gt-caption">' + escapeHTML(fixLatex(item.caption)) + '</p>' : '') +
-                '</div>'
-            );
-        }
+       
 
         parts.push('<p class="gt-definition">' + escapeHTML(fixLatex(item.definition)) + '</p>');
 
@@ -97,6 +88,16 @@
                 '<a class="gt-link" href="' + escapeHTML(item.link) + '" target="_blank" rel="noopener">' +
                     'Read more &rarr;' +
                 '</a>'
+            );
+        }
+        if (item.imageUrl) {
+            parts.push(
+                '<div class="gt-img-wrap">' +
+                    '<img src="' + escapeHTML(host + item.imageUrl) + '"' +
+                    (item.altText ? ' alt="' + escapeHTML(item.altText) + '"' : '') +
+                    ' style="max-width:100%;border-radius:4px;" />' +
+                    (item.caption ? '<p class="gt-caption">' + escapeHTML(fixLatex(item.caption)) + '</p>' : '') +
+                '</div>'
             );
         }
 
@@ -178,14 +179,15 @@
             style = document.createElement('style');
             style.id = 'gt-styles';
             style.textContent = [
-                '.gt-tooltip{max-width:280px;font-size:13px;line-height:1.5;}',
+                '.gt-tooltip{max-width:280px;font-size:8px;line-height:1;}',
                 '.gt-img-wrap{margin-bottom:8px;}',
                 '.gt-caption{margin:4px 0 0;font-size:11px;color:#888;text-align:center;}',
                 '.gt-definition{margin:0 0 6px;}',
                 '.gt-source{margin:4px 0;font-size:11px;color:#aaa;}',
                 '.gt-link{display:inline-block;margin-top:4px;font-size:12px;color:#4a90e2;text-decoration:none;}',
                 '.gt-link:hover{text-decoration:underline;}',
-                '.tippy-box[data-theme~="light"]{background-color:#f0f4ff;}'
+                '.tippy-box[data-theme~="dark"]{background-color:#f0f4af;}',
+                '.tippy-box[data-theme~="dark"] .tippy-content{padding:10px 14px;}'
             ].join('');
             document.head.appendChild(style);
         }
@@ -195,7 +197,8 @@
             theme: 'light',
             allowHTML: true,
             interactive: true,
-            maxWidth: 300,
+            maxWidth: 400,
+            minWidth: 300,
             content: function (el) { return el.dataset.tippyContent; },
             onShown: function (instance) {
                 typesetTooltip(instance.popper);
