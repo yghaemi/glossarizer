@@ -258,7 +258,7 @@
       // Build caption string: "Caption (License; author via source)"
       var captionBase = hasValue(item.caption) ? escapeHTML(fixLatex(item.caption)) : "";
       var imgAttrParts = [];
-      if (hasValue(item.imageLicense)) imgAttrParts.push(escapeHTML(item.imageLicense));
+      if (hasValue(item.imageLicense)) imgAttrParts.push(escapeHTML( license_map[item.imageLicense] || item.imageLicense));
       if (hasValue(item.imageAuthor) && hasValue(item.imageSource))
         imgAttrParts.push(escapeHTML(item.imageAuthor) + " via " + escapeHTML(item.imageSource));
       else if (hasValue(item.imageAuthor))
