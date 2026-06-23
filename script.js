@@ -89,8 +89,15 @@ function triggerMathJax() {
 }
 
 function renderTable(terms) {
+  const library = extract_library(page_url);
   var rows = terms
     .map(function (item) {
+      const pagesLinks = item.pages
+        ?.map(
+          (page, index) =>
+            `<a href="https://${library}.libretexts.org/@go/page/${page}" target="_blank">(${index + 1})</a>`,
+        )
+        .join("");
       return (
         '<p class="glossaryElement">' +
         '<span class="glossaryTerm">' +
@@ -99,6 +106,8 @@ function renderTable(terms) {
         " | " +
         '<span class="glossaryDefinition">' +
         unescapeLatex(item.definition) +
+        " " +
+        `<sup>${pagesLinks}</sup>` +
         "</span>" +
         "</p>"
       );

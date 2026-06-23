@@ -1,22 +1,20 @@
-
-
 (function () {
-    const license_map = {
-        'arr': 'All Rights Reserved',
-        'ccby': 'CC-BY',
-        'ccbync': 'CC-BY-NC',
-        'ccbyncnd': 'CC-BY-NC-ND',
-        'ccbyncsa': 'CC-BY-NC-SA',
-        'ccbynd': 'CC-BY-ND',
-        'ccbysa': 'CC-BY-SA',
-        'gnu': 'GNU',
-        'gnudsl': 'GNU DSL',
-        'gnufdl': 'GNU FDL',
-        'gnugpl': 'GNU GPL',
-        'publicdomain': 'Public Domain',
-        'ck12': 'CK-12 License',
-        'multiple': 'Multiple Licenses',
-    }
+  const license_map = {
+    arr: "All Rights Reserved",
+    ccby: "CC-BY",
+    ccbync: "CC-BY-NC",
+    ccbyncnd: "CC-BY-NC-ND",
+    ccbyncsa: "CC-BY-NC-SA",
+    ccbynd: "CC-BY-ND",
+    ccbysa: "CC-BY-SA",
+    gnu: "GNU",
+    gnudsl: "GNU DSL",
+    gnufdl: "GNU FDL",
+    gnugpl: "GNU GPL",
+    publicdomain: "Public Domain",
+    ck12: "CK-12 License",
+    multiple: "Multiple Licenses",
+  };
   // ---- Reuse helpers from script.js if available, else define locally ----
   function getLibrary(hostname) {
     if (typeof extract_library === "function") return extract_library(hostname);
@@ -221,7 +219,9 @@
     // ---- Definition panel ----
     var defParts = [];
     defParts.push(
-      '<p class="gt-definition">' + escapeHTML(fixLatex(item.definition)) + "</p>",
+      '<p class="gt-definition">' +
+        escapeHTML(fixLatex(item.definition)) +
+        "</p>",
     );
 
     // ---- Attribution panel ----
@@ -231,19 +231,39 @@
 
     var termAttrParts = [];
     if (hasValue(item.author)) {
-      termAttrParts.push('<p class="gt-attr-row"><span class="gt-attr-label">Author</span>' + escapeHTML(item.author) + "</p>");
+      termAttrParts.push(
+        '<p class="gt-attr-row"><span class="gt-attr-label">Author</span>' +
+          escapeHTML(item.author) +
+          "</p>",
+      );
     }
     if (hasValue(item.source)) {
-      var licenseText = (typeof license_map !== "undefined" && license_map[item.source])
-        ? license_map[item.source]
-        : item.source;
-      termAttrParts.push('<p class="gt-attr-row"><span class="gt-attr-label">License</span>' + escapeHTML(licenseText) + "</p>");
+      var licenseText =
+        typeof license_map !== "undefined" && license_map[item.source]
+          ? license_map[item.source]
+          : item.source;
+      termAttrParts.push(
+        '<p class="gt-attr-row"><span class="gt-attr-label">License</span>' +
+          escapeHTML(licenseText) +
+          "</p>",
+      );
+    }
+    if (hasValue(item.aliases) && item.aliases.length > 0) {
+      termAttrParts.push(
+        '<p class="gt-attr-row"><span class="gt-attr-label">Aliases</span>' +
+          escapeHTML(item.aliases.join(", ")) +
+          "</p>",
+      );
     }
     if (hasValue(item.link)) {
       termAttrParts.push(
-        '<a class="gt-link" href="' + escapeHTML(item.link) + '" target="_blank" rel="noopener"' +
-        ' aria-label="Read more about ' + term + ' (opens in new tab)">' +
-        'Read more <span aria-hidden="true">&rarr;</span></a>',
+        '<a class="gt-link" href="' +
+          escapeHTML(item.link) +
+          '" target="_blank" rel="noopener"' +
+          ' aria-label="Read more about ' +
+          term +
+          ' (opens in new tab)">' +
+          'Read more <span aria-hidden="true">&rarr;</span></a>',
       );
     }
     var hasAttribution = termAttrParts.length > 0;
@@ -256,16 +276,25 @@
       var imgAlt = hasValue(item.altText) ? escapeHTML(item.altText) : "";
 
       // Build caption string: "Caption (License; author via source)"
-      var captionBase = hasValue(item.caption) ? escapeHTML(fixLatex(item.caption)) : "";
+      var captionBase = hasValue(item.caption)
+        ? escapeHTML(fixLatex(item.caption))
+        : "";
       var imgAttrParts = [];
-      if (hasValue(item.imageLicense)) imgAttrParts.push(escapeHTML( license_map[item.imageLicense] || item.imageLicense));
+      if (hasValue(item.imageLicense))
+        imgAttrParts.push(
+          escapeHTML(license_map[item.imageLicense] || item.imageLicense),
+        );
       if (hasValue(item.imageAuthor) && hasValue(item.imageSource))
-        imgAttrParts.push(escapeHTML(item.imageAuthor) + " via " + escapeHTML(item.imageSource));
+        imgAttrParts.push(
+          escapeHTML(item.imageAuthor) + " via " + escapeHTML(item.imageSource),
+        );
       else if (hasValue(item.imageAuthor))
         imgAttrParts.push(escapeHTML(item.imageAuthor));
       else if (hasValue(item.imageSource))
         imgAttrParts.push(escapeHTML(item.imageSource));
-      var imgAttribution = imgAttrParts.length ? "(" + imgAttrParts.join("; ") + ")" : "";
+      var imgAttribution = imgAttrParts.length
+        ? "(" + imgAttrParts.join("; ") + ")"
+        : "";
       var imgCaption = [captionBase, imgAttribution].filter(Boolean).join(" ");
 
       imgParts.push(
@@ -296,30 +325,88 @@
     }
 
     // ---- Tabbed layout (Definition always + optional Image + optional Attribution) ----
-    var tabDefs = [{ id: uid + "-def", btnId: uid + "-btn0", label: "Definition", content: defParts.join("") }];
-    if (hasImage) tabDefs.push({ id: uid + "-img", btnId: uid + "-btn" + tabDefs.length, label: "Image", content: imgParts.join("") });
-    if (hasAttribution) tabDefs.push({ id: uid + "-attr", btnId: uid + "-btn" + tabDefs.length, label: "Attribution", content: termAttrParts.join("") });
+    var tabDefs = [
+      {
+        id: uid + "-def",
+        btnId: uid + "-btn0",
+        label: "Definition",
+        content: defParts.join(""),
+      },
+    ];
+    if (hasAttribution)
+      tabDefs.push({
+        id: uid + "-attr",
+        btnId: uid + "-btn" + tabDefs.length,
+        label: "Attribution",
+        content: termAttrParts.join(""),
+      });
+    if (hasImage)
+      tabDefs.push({
+        id: uid + "-img",
+        btnId: uid + "-btn" + tabDefs.length,
+        label: "Image",
+        content: imgParts.join(""),
+      });
     var total = tabDefs.length;
 
-    var tabButtons = tabDefs.map(function (t, i) {
-      return '<button class="gt-tab' + (i === 0 ? ' gt-tab--active' : '') + '"' +
-        ' role="tab" id="' + t.btnId + '" aria-selected="' + (i === 0 ? 'true' : 'false') + '"' +
-        ' aria-controls="' + t.id + '" tabindex="' + (i === 0 ? '0' : '-1') + '"' +
-        ' onclick="_gtSwitchTab(this,' + i + ')" onkeydown="_gtTabKeydown(event,this,' + i + ',' + total + ')">' +
-        t.label + '</button>';
-    }).join('');
+    var tabButtons = tabDefs
+      .map(function (t, i) {
+        return (
+          '<button class="gt-tab' +
+          (i === 0 ? " gt-tab--active" : "") +
+          '"' +
+          ' role="tab" id="' +
+          t.btnId +
+          '" aria-selected="' +
+          (i === 0 ? "true" : "false") +
+          '"' +
+          ' aria-controls="' +
+          t.id +
+          '" tabindex="' +
+          (i === 0 ? "0" : "-1") +
+          '"' +
+          ' onclick="_gtSwitchTab(this,' +
+          i +
+          ')" onkeydown="_gtTabKeydown(event,this,' +
+          i +
+          "," +
+          total +
+          ')">' +
+          t.label +
+          "</button>"
+        );
+      })
+      .join("");
 
-    var tabPanels = tabDefs.map(function (t, i) {
-      return '<div class="gt-panel' + (i === 0 ? ' gt-panel--active' : '') + '"' +
-        ' role="tabpanel" id="' + t.id + '" aria-labelledby="' + t.btnId + '"' +
-        (i !== 0 ? ' aria-hidden="true"' : '') + '>' +
-        t.content + '</div>';
-    }).join('');
+    var tabPanels = tabDefs
+      .map(function (t, i) {
+        return (
+          '<div class="gt-panel' +
+          (i === 0 ? " gt-panel--active" : "") +
+          '"' +
+          ' role="tabpanel" id="' +
+          t.id +
+          '" aria-labelledby="' +
+          t.btnId +
+          '"' +
+          (i !== 0 ? ' aria-hidden="true"' : "") +
+          ">" +
+          t.content +
+          "</div>"
+        );
+      })
+      .join("");
 
-    return '<div class="gt-tooltip">' +
-      '<div class="gt-tabs" role="tablist" aria-label="' + term + ' sections">' + tabButtons + '</div>' +
+    return (
+      '<div class="gt-tooltip">' +
+      '<div class="gt-tabs" role="tablist" aria-label="' +
+      term +
+      ' sections">' +
+      tabButtons +
+      "</div>" +
       tabPanels +
-      '</div>';
+      "</div>"
+    );
   }
 
   // ---- Walk text nodes and wrap matched terms ----
@@ -462,7 +549,7 @@
       trigger: "mouseenter click",
       hideOnClick: true,
       aria: {
-        content: "describedby",  // sets aria-describedby on the button while open
+        content: "describedby", // sets aria-describedby on the button while open
         expanded: "auto",
       },
       content: function (el) {
@@ -583,8 +670,17 @@
     if (!items.length) return;
 
     var termMap = {};
+    // First pass: register canonical terms
     items.forEach(function (item) {
       termMap[item.term.toLowerCase()] = item;
+    });
+    // Second pass: register aliases only when not already a term
+    items.forEach(function (item) {
+      if (!Array.isArray(item.aliases)) return;
+      item.aliases.forEach(function (alias) {
+        var key = alias.toLowerCase().trim();
+        if (key && !termMap[key]) termMap[key] = item;
+      });
     });
 
     loadTippy(function () {
