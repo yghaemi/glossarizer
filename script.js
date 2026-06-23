@@ -6,203 +6,246 @@ const CACHE_TTL = 60 * 60 * 1000;
 
 // ---- Helpers ----
 function extract_library(hostname) {
-    const parts = hostname.split(".");
-    return parts?.[0]?.toLowerCase() ?? "dev";
+  if (hostname.includes("localhost")) {
+    return "dev";
+  }
+  const parts = hostname.split(".");
+  return parts?.[0]?.toLowerCase() ?? "dev";
 }
-    
+
 function unescapeLatex(str) {
-    return str
-        .replace(/\\\\\(/g, '\\(')   // \\( → \(
-        .replace(/\\\\\)/g, '\\)')   // \\) → \)
-        .replace(/\\\\\[/g, '\\[')   // \\[ → \[
-        .replace(/\\\\\]/g, '\\]')   // \\] → \]
-        .replace(/\\\$/g, '$');      // \$ → $
+  return str
+    .replace(/\\\\\(/g, "\\(") // \\( → \(
+    .replace(/\\\\\)/g, "\\)") // \\) → \)
+    .replace(/\\\\\[/g, "\\[") // \\[ → \[
+    .replace(/\\\\\]/g, "\\]") // \\] → \]
+    .replace(/\\\$/g, "$"); // \$ → $
 }
 
 // Configure mhchem before MathJax loads (pre-config is picked up at MathJax startup)
 (function () {
-    var existing = window.MathJax || {};
-    var loaderLoad = [].concat((existing.loader || {}).load || []);
-    if (loaderLoad.indexOf('[tex]/mhchem') === -1) loaderLoad.push('[tex]/mhchem');
-    var texPkgs = Object.assign({}, (existing.tex || {}).packages);
-    var plus = [].concat(texPkgs['[+]'] || []);
-    if (plus.indexOf('mhchem') === -1) plus.push('mhchem');
-    texPkgs['[+]'] = plus;
-    window.MathJax = Object.assign(existing, {
-        loader: Object.assign(existing.loader || {}, { load: loaderLoad }),
-        tex:    Object.assign(existing.tex    || {}, { packages: texPkgs })
-    });
-}());
-
-
+  var existing = window.MathJax || {};
+  var loaderLoad = [].concat((existing.loader || {}).load || []);
+  if (loaderLoad.indexOf("[tex]/mhchem") === -1)
+    loaderLoad.push("[tex]/mhchem");
+  var texPkgs = Object.assign({}, (existing.tex || {}).packages);
+  var plus = [].concat(texPkgs["[+]"] || []);
+  if (plus.indexOf("mhchem") === -1) plus.push("mhchem");
+  texPkgs["[+]"] = plus;
+  window.MathJax = Object.assign(existing, {
+    loader: Object.assign(existing.loader || {}, { load: loaderLoad }),
+    tex: Object.assign(existing.tex || {}, { packages: texPkgs }),
+  });
+})();
 
 function triggerMathJax() {
-    function typeset() {
-        MathJax.typesetPromise([document.getElementById('glossary-output')])
-            .then(function() { console.log("MathJax typeset done"); })
-            .catch(function(err) { console.error("MathJax typeset error:", err); });
-    }
+  function typeset() {
+    MathJax.typesetPromise([document.getElementById("glossary-output")])
+      .then(function () {
+        console.log("MathJax typeset done");
+      })
+      .catch(function (err) {
+        console.error("MathJax typeset error:", err);
+      });
+  }
 
-    function typesetWhenReady() {
-        if (typeof MathJax === "undefined" || !MathJax.typesetPromise) return false;
-        typeset();
-        return true;
-    }
+  function typesetWhenReady() {
+    if (typeof MathJax === "undefined" || !MathJax.typesetPromise) return false;
+    typeset();
+    return true;
+  }
 
-    // MathJax already loaded — ensure mhchem is present then typeset
-    if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
-        if (MathJax.loader && typeof MathJax.loader.load === 'function') {
-            Promise.resolve(MathJax.loader.load('[tex]/mhchem'))
-                .then(function () {
-                    // Register package with the TeX input jax if not already present
-                    if (MathJax.config && MathJax.config.tex) {
-                        var p = MathJax.config.tex.packages = MathJax.config.tex.packages || {};
-                        var plus = [].concat(p['[+]'] || []);
-                        if (plus.indexOf('mhchem') === -1) { plus.push('mhchem'); p['[+]'] = plus; }
-                    }
-                    typeset();
-                })
-                .catch(typeset);
-        } else {
-            typeset();
-        }
-        return;
+  // MathJax already loaded — ensure mhchem is present then typeset
+  if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
+    if (MathJax.loader && typeof MathJax.loader.load === "function") {
+      Promise.resolve(MathJax.loader.load("[tex]/mhchem"))
+        .then(function () {
+          // Register package with the TeX input jax if not already present
+          if (MathJax.config && MathJax.config.tex) {
+            var p = (MathJax.config.tex.packages =
+              MathJax.config.tex.packages || {});
+            var plus = [].concat(p["[+]"] || []);
+            if (plus.indexOf("mhchem") === -1) {
+              plus.push("mhchem");
+              p["[+]"] = plus;
+            }
+          }
+          typeset();
+        })
+        .catch(typeset);
+    } else {
+      typeset();
     }
+    return;
+  }
 
-    // Poll until page's MathJax is ready
-    var interval = setInterval(function() {
-        if (typesetWhenReady()) {
-            clearInterval(interval);
-            console.log("MathJax ready — typesetting glossary");
-        }
-    }, 100);
+  // Poll until page's MathJax is ready
+  var interval = setInterval(function () {
+    if (typesetWhenReady()) {
+      clearInterval(interval);
+      console.log("MathJax ready — typesetting glossary");
+    }
+  }, 100);
 }
 
 function renderTable(terms) {
-    var rows = terms.map(function (item) {
-        return '<p class="glossaryElement">' +
-            '<span class="glossaryTerm">'       + unescapeLatex(item.term)       + '</span>' + ' | ' +
-            '<span class="glossaryDefinition">' + unescapeLatex(item.definition) + '</span>' +
-        '</p>';
-    }).join('');
+  var rows = terms
+    .map(function (item) {
+      return (
+        '<p class="glossaryElement">' +
+        '<span class="glossaryTerm">' +
+        unescapeLatex(item.term) +
+        "</span>" +
+        " | " +
+        '<span class="glossaryDefinition">' +
+        unescapeLatex(item.definition) +
+        "</span>" +
+        "</p>"
+      );
+    })
+    .join("");
 
- 
+  document.getElementById("glossary-output").innerHTML =
+    '<div id="visibleGlossary"><h2>Glossary</h2>' + rows + "</div>";
 
-    document.getElementById('glossary-output').innerHTML =
-        '<div id="visibleGlossary"><h2>Glossary</h2>' + rows  + '</div>';
-
-    requestAnimationFrame(function() {
-    	requestAnimationFrame(function() {
-        console.log("HTML going to MathJax:", document.getElementById('glossary-output').innerHTML);
-        triggerMathJax();
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      console.log(
+        "HTML going to MathJax:",
+        document.getElementById("glossary-output").innerHTML,
+      );
+      triggerMathJax();
     });
-});
+  });
 }
 
 function cacheKey(coverID, library) {
-    return "glossary-data-" + coverID + "-" + library;
+  return "glossary-data-" + coverID + "-" + library;
 }
 
 function getCached(coverID, library) {
-    try {
-        var key = cacheKey(coverID, library);
-        // var storages = localStorage.keys();
-        // storages.forEach(function(storage) {
-        //     console.log(storage);
-        // });
-        var raw = localStorage.getItem(key);
-        if (!raw) return null;
-        var cached = JSON.parse(raw);
-        if (Date.now() - cached.timestamp > CACHE_TTL) {
-            localStorage.removeItem(key);
-            return null;
-        }
-        return cached.data;
-    } catch (e) {
-        return null;
+  try {
+    var key = cacheKey(coverID, library);
+    // var storages = localStorage.keys();
+    // storages.forEach(function(storage) {
+    //     console.log(storage);
+    // });
+    var raw = localStorage.getItem(key);
+    if (!raw) return null;
+    var cached = JSON.parse(raw);
+    if (Date.now() - cached.timestamp > CACHE_TTL) {
+      localStorage.removeItem(key);
+      return null;
     }
+    return cached.data;
+  } catch (e) {
+    return null;
+  }
 }
 
 function setCache(coverID, library, data) {
-    try {
-        localStorage.setItem(cacheKey(coverID, library), JSON.stringify({
-            timestamp: Date.now(),
-            data: data
-        }));
-    } catch (e) {
-        console.warn("Cache write failed:", e);
-    }
+  try {
+    localStorage.setItem(
+      cacheKey(coverID, library),
+      JSON.stringify({
+        timestamp: Date.now(),
+        data: data,
+      }),
+    );
+  } catch (e) {
+    console.warn("Cache write failed:", e);
+  }
 }
 
 // ---- Main ----
-document.addEventListener('DOMContentLoaded', function () {
-    const pageIdEl = document.getElementById("pageId");
-    if (!pageIdEl) {
-        document.getElementById('glossary-output').textContent = 'Error: pageId element not found';
-        return;
-    }
+document.addEventListener("DOMContentLoaded", function () {
+  const pageIdEl = document.getElementById("pageId");
+  if (!pageIdEl) {
+    document.getElementById("glossary-output").textContent =
+      "Error: pageId element not found";
+    return;
+  }
 
-    const pageId = pageIdEl.value;
-    console.log("--------------------------------pageId:", pageId);
-    const library = extract_library(page_url);
-    const url = API_HOST + "/api/v1/commons/glossary/page/" + pageId + "/library/" + library;
-    console.log("--------------------------------url:", url);
-    function renderGlossary(data) {
-        if (!data || !data.items || !data.items.length) {
-            document.getElementById('glossary-output').textContent = 'No glossary terms found.';
-            return;
-        }
-        const showAll = pageId === data.glossaryID;
-        renderTable(showAll ? data.items : data.items.filter(item => item.pages.includes(pageId)));
+  const pageId = pageIdEl.value;
+  const library = extract_library(page_url);
+  const url =
+    API_HOST +
+    "/api/v1/commons/glossary/page/" +
+    pageId +
+    "/library/" +
+    library;
+  function renderGlossary(data) {
+    if (!data || !data.items || !data.items.length) {
+      document.getElementById("glossary-output").textContent =
+        "No glossary terms found.";
+      return;
     }
+    const showAll = pageId === data.glossaryID;
+    renderTable(
+      showAll
+        ? data.items
+        : data.items.filter((item) => item.pages.includes(pageId)),
+    );
+  }
 
-    function fetchFull() {
-        console.log("Fetching full glossary from:", url);
-        return fetch(url, {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(function (response) {
-            if (!response.ok) throw new Error('Request failed with status: ' + response.status);
-            return response.json();
-        })
-        .then(function (data) {
-            if (!data || data.err === true || !data.data) {
-                document.getElementById('glossary-output').textContent = 'No glossary terms found.';
-                return;
-            }
-            setCache(data.data.coverID, data.data.library, data.data);
-            renderGlossary(data.data);
-            document.dispatchEvent(new CustomEvent('glossary:updated', {
-                detail: { coverID: data.data.coverID, library: data.data.library }
-            }));
-        });
-    }
-
-    console.log("Checking glossary freshness from:", url);
-    fetch(url, {
-        method: 'GET',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  function fetchFull() {
+    console.log("Fetching full glossary from:", url);
+    return fetch(url, {
+      method: "POST",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
     })
-    .then(function (response) {
-        if (!response.ok) throw new Error('Request failed with status: ' + response.status);
+      .then(function (response) {
+        if (!response.ok)
+          throw new Error("Request failed with status: " + response.status);
         return response.json();
+      })
+      .then(function (data) {
+        if (!data || data.err === true || !data.data) {
+          document.getElementById("glossary-output").textContent =
+            "No glossary terms found.";
+          return;
+        }
+        setCache(data.data.coverID, data.data.library, data.data);
+        renderGlossary(data.data);
+        document.dispatchEvent(
+          new CustomEvent("glossary:updated", {
+            detail: { coverID: data.data.coverID, library: data.data.library },
+          }),
+        );
+      });
+  }
+
+  console.log("Checking glossary freshness from:", url);
+  fetch(url, {
+    method: "GET",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+  })
+    .then(function (response) {
+      if (!response.ok)
+        throw new Error("Request failed with status: " + response.status);
+      return response.json();
     })
     .then(function (details) {
-        var coverInput = document.getElementById("coverID");
-        if (coverInput) coverInput.value = details.coverID;
-        var cached = getCached(details.coverID, library);
-        if (cached && new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)) {
-            console.log("Glossary loaded from cache");
-            renderGlossary(cached);
-            document.dispatchEvent(new CustomEvent('glossary:updated', {
-                detail: { coverID: details.coverID, library: library }
-            }));
-        } else {
-            fetchFull();
-        }
+      var coverInput = document.getElementById("coverID");
+      if (coverInput) coverInput.value = details.coverID;
+      var cached = getCached(details.coverID, library);
+      if (
+        cached &&
+        new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)
+      ) {
+        console.log("Glossary loaded from cache");
+        renderGlossary(cached);
+        document.dispatchEvent(
+          new CustomEvent("glossary:updated", {
+            detail: { coverID: details.coverID, library: library },
+          }),
+        );
+      } else {
+        fetchFull();
+      }
     })
     .catch(function (error) {
-        document.getElementById('glossary-output').textContent = 'Error: ' + error.message;
+      document.getElementById("glossary-output").textContent =
+        "Error: " + error.message;
     });
 });
