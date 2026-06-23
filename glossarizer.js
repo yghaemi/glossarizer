@@ -409,16 +409,6 @@
                         return;
                     }
 
-                    // Tab past the last focusable in tooltip → close and let page flow continue
-                    if (e.key === 'Tab' && !e.shiftKey) {
-                        var focusable = getFocusable();
-                        if (focusable.length && document.activeElement === focusable[focusable.length - 1]) {
-                            instance.hide();
-                            // Don't preventDefault — let the browser move to the next page element
-                        }
-                        return;
-                    }
-
                     // Escape from anywhere inside tooltip → close and return focus to term
                     if (e.key === 'Escape' && instance.popper.contains(document.activeElement)) {
                         e.stopPropagation();
@@ -427,12 +417,25 @@
                     }
                 };
                 document.addEventListener('keydown', instance._gtKbHandler);
+
+                // Dismiss whenever focus moves to something outside the term + tooltip
+                instance._gtFocusHandler = function (e) {
+                    var target = e.target;
+                    if (target !== instance.reference && !instance.popper.contains(target)) {
+                        instance.hide();
+                    }
+                };
+                document.addEventListener('focusin', instance._gtFocusHandler);
             },
             onHide: function (instance) {
                 instance.reference.setAttribute('aria-expanded', 'false');
                 if (instance._gtKbHandler) {
                     document.removeEventListener('keydown', instance._gtKbHandler);
                     instance._gtKbHandler = null;
+                }
+                if (instance._gtFocusHandler) {
+                    document.removeEventListener('focusin', instance._gtFocusHandler);
+                    instance._gtFocusHandler = null;
                 }
             },
             onShown: function (instance) {
