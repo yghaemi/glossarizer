@@ -71,37 +71,165 @@
         }
     }
 
+    // ---- Lightbox ----
+    window._gtOpenLightbox = function (src, alt, caption) {
+        var existing = document.getElementById('gt-lightbox');
+        if (existing) existing.remove();
+
+        // Remember what had focus so we can return to it on close
+        window._gtLbTrigger = document.activeElement;
+
+        var overlay = document.createElement('div');
+        overlay.id = 'gt-lightbox';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', alt ? 'Enlarged image: ' + alt : 'Enlarged image');
+        overlay.innerHTML =
+            '<div class="gt-lb-backdrop"></div>' +
+            '<div class="gt-lb-dialog">' +
+                '<button class="gt-lb-close" onclick="_gtCloseLightbox()" aria-label="Close enlarged image">&times;</button>' +
+                '<img class="gt-lb-img" src="' + src + '" alt="' + (alt || '') + '" />' +
+                (caption ? '<p class="gt-lb-caption">' + caption + '</p>' : '') +
+            '</div>';
+
+        overlay.querySelector('.gt-lb-backdrop').addEventListener('click', window._gtCloseLightbox);
+
+        document.addEventListener('keydown', window._gtLbKeyHandler = function (e) {
+            if (e.key === 'Escape') { window._gtCloseLightbox(); return; }
+            // Focus trap: keep Tab cycling inside the dialog
+            if (e.key === 'Tab') {
+                var lb = document.getElementById('gt-lightbox');
+                if (!lb) return;
+                var focusable = Array.from(lb.querySelectorAll('button, [tabindex]:not([tabindex="-1"])'));
+                if (!focusable.length) return;
+                var first = focusable[0], last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault(); last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault(); first.focus();
+                }
+            }
+        });
+
+        document.body.appendChild(overlay);
+        // Move focus to the close button so screen readers announce the dialog
+        var closeBtn = overlay.querySelector('.gt-lb-close');
+        if (closeBtn) closeBtn.focus();
+    };
+
+    window._gtCloseLightbox = function () {
+        var lb = document.getElementById('gt-lightbox');
+        if (lb) lb.remove();
+        document.removeEventListener('keydown', window._gtLbKeyHandler);
+        // Return focus to the element that opened the lightbox
+        if (window._gtLbTrigger && typeof window._gtLbTrigger.focus === 'function') {
+            window._gtLbTrigger.focus();
+            window._gtLbTrigger = null;
+        }
+    };
+
+    // Global tab-switcher (needs to be reachable from inline onclick inside the tooltip HTML)
+    window._gtSwitchTab = function (btn, idx) {
+        var tooltip = btn.closest('.gt-tooltip');
+        if (!tooltip) return;
+        tooltip.querySelectorAll('.gt-tab').forEach(function (b, i) {
+            var active = i === idx;
+            b.classList.toggle('gt-tab--active', active);
+            b.setAttribute('aria-selected', active ? 'true' : 'false');
+            b.setAttribute('tabindex', active ? '0' : '-1');
+        });
+        tooltip.querySelectorAll('.gt-panel').forEach(function (p, i) {
+            var active = i === idx;
+            p.classList.toggle('gt-panel--active', active);
+            p.setAttribute('aria-hidden', active ? 'false' : 'true');
+        });
+    };
+
+    // Arrow-key navigation between tabs (ARIA tabs pattern)
+    window._gtTabKeydown = function (e, btn, idx, total) {
+        var tooltip = btn.closest('.gt-tooltip');
+        if (!tooltip) return;
+        var tabs = Array.from(tooltip.querySelectorAll('.gt-tab'));
+        var newIdx = -1;
+        if      (e.key === 'ArrowRight' || e.key === 'ArrowDown')  newIdx = (idx + 1) % total;
+        else if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    newIdx = (idx - 1 + total) % total;
+        else if (e.key === 'Home')                                   newIdx = 0;
+        else if (e.key === 'End')                                    newIdx = total - 1;
+        if (newIdx >= 0) {
+            e.preventDefault();
+            window._gtSwitchTab(tabs[newIdx], newIdx);
+            tabs[newIdx].focus();
+        }
+    };
+
     function buildTooltipHTML(item) {
         var host = (typeof API_HOST !== 'undefined' ? API_HOST : '').replace(/\/api.*/, '').replace(/\/$/, '');
-        var parts = [];
 
-       
+        // Unique ID prefix so multiple tooltips on a page don't share IDs
+        var uid = 'gt-' + (window._gtUid = ((window._gtUid || 0) + 1));
+        var term = escapeHTML(item.term || '');
 
-        parts.push('<p class="gt-definition">' + escapeHTML(fixLatex(item.definition)) + '</p>');
-
+        // ---- Definition panel ----
+        var defParts = [];
+        defParts.push('<p class="gt-definition">' + escapeHTML(fixLatex(item.definition)) + '</p>');
         if (item.source) {
-            parts.push('<p class="gt-source">Source: ' + escapeHTML(item.source) + '</p>');
+            defParts.push('<p class="gt-source">Source: ' + escapeHTML(item.source) + '</p>');
         }
-
         if (item.link) {
-            parts.push(
-                '<a class="gt-link" href="' + escapeHTML(item.link) + '" target="_blank" rel="noopener">' +
-                    'Read more &rarr;' +
+            defParts.push(
+                '<a class="gt-link" href="' + escapeHTML(item.link) + '" target="_blank" rel="noopener"' +
+                ' aria-label="Read more about ' + term + ' (opens in new tab)">' +
+                    'Read more <span aria-hidden="true">&rarr;</span>' +
                 '</a>'
             );
         }
-        if (item.imageUrl) {
-            parts.push(
-                '<div class="gt-img-wrap">' +
-                    '<img src="' + escapeHTML(host + item.imageUrl) + '"' +
-                    (item.altText ? ' alt="' + escapeHTML(item.altText) + '"' : '') +
-                    ' style="max-width:100%;border-radius:4px;" />' +
-                    (item.caption ? '<p class="gt-caption">' + escapeHTML(fixLatex(item.caption)) + '</p>' : '') +
-                '</div>'
-            );
+
+        // No image — return simple layout without tabs
+        if (!item.imageUrl) {
+            return '<div class="gt-tooltip">' + defParts.join('') + '</div>';
         }
 
-        return '<div class="gt-tooltip">' + parts.join('') + '</div>';
+        // ---- Image panel ----
+        var imgParts = [];
+        var imgSrc     = escapeHTML(host + item.imageUrl);
+        var imgAlt     = item.altText ? escapeHTML(item.altText) : '';
+        var imgCaption = item.caption ? escapeHTML(fixLatex(item.caption)) : '';
+        // Wrap in a <button> so it is keyboard-reachable; img alt="" because button carries the label
+        imgParts.push(
+            '<div class="gt-img-wrap">' +
+                '<button class="gt-lb-trigger"' +
+                ' onclick="_gtOpenLightbox(\'' + imgSrc + '\',\'' + imgAlt + '\',\'' + imgCaption + '\')"' +
+                ' aria-label="View image larger' + (imgAlt ? ': ' + imgAlt : '') + '">' +
+                    '<img class="gt-lb-thumb" src="' + imgSrc + '" alt="" aria-hidden="true" />' +
+                '</button>' +
+                (imgCaption ? '<p class="gt-caption">' + imgCaption + '</p>' : '') +
+            '</div>'
+        );
+        if (item.altText) {
+            imgParts.push('<p class="gt-source">' + escapeHTML(item.altText) + '</p>');
+        }
+
+        // ---- Tabbed layout ----
+        var defId  = uid + '-def';
+        var imgId  = uid + '-img';
+        var btn0Id = uid + '-btn0';
+        var btn1Id = uid + '-btn1';
+        return '<div class="gt-tooltip">' +
+            '<div class="gt-tabs" role="tablist" aria-label="' + term + ' sections">' +
+                '<button class="gt-tab gt-tab--active"' +
+                ' role="tab" id="' + btn0Id + '" aria-selected="true" aria-controls="' + defId + '" tabindex="0"' +
+                ' onclick="_gtSwitchTab(this,0)" onkeydown="_gtTabKeydown(event,this,0,2)">Definition</button>' +
+                '<button class="gt-tab"' +
+                ' role="tab" id="' + btn1Id + '" aria-selected="false" aria-controls="' + imgId + '" tabindex="-1"' +
+                ' onclick="_gtSwitchTab(this,1)" onkeydown="_gtTabKeydown(event,this,1,2)">Image</button>' +
+            '</div>' +
+            '<div class="gt-panel gt-panel--active" role="tabpanel" id="' + defId + '" aria-labelledby="' + btn0Id + '">' +
+                defParts.join('') +
+            '</div>' +
+            '<div class="gt-panel" role="tabpanel" id="' + imgId + '" aria-labelledby="' + btn1Id + '" aria-hidden="true">' +
+                imgParts.join('') +
+            '</div>' +
+        '</div>';
     }
 
     // ---- Walk text nodes and wrap matched terms ----
@@ -154,12 +282,36 @@
                 if (match.index > lastIndex) {
                     frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
                 }
+                var termData = termMap[match[0].toLowerCase()];
+
+                // Pre-render a plain-text, visually-hidden description so ANDI and
+                // screen readers can always find the definition in the static DOM —
+                // independent of whether Tippy has mounted its tooltip yet.
+                var descId = 'gt-desc-' + (window._gtDescId = (window._gtDescId || 0) + 1);
+                var descEl = document.createElement('span');
+                descEl.id = descId;
+                descEl.className = 'gt-sr-only';
+                descEl.setAttribute('role', 'tooltip');
+                descEl.textContent = (termData.definition ? fixLatex(termData.definition) : '') +
+                    (termData.source ? ' Source: ' + termData.source : '');
+
                 var span = document.createElement('span');
                 span.className = 'glossary-term';
                 span.textContent = match[0];
                 span.style.cssText = 'border-bottom:1px dotted currentColor;cursor:help;';
-                span.dataset.tippyContent = buildTooltipHTML(termMap[match[0].toLowerCase()]);
+                span.setAttribute('role', 'button');
+                span.setAttribute('tabindex', '0');
+                span.setAttribute('aria-haspopup', 'dialog');
+                span.setAttribute('aria-expanded', 'false');
+                // Point directly at the always-present hidden description
+                span.setAttribute('aria-describedby', descId);
+                // Enter and Space must fire click so Tippy's 'click' trigger activates
+                span.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); }
+                });
+                span.dataset.tippyContent = buildTooltipHTML(termData);
                 frag.appendChild(span);
+                frag.appendChild(descEl);   // must follow span in DOM
                 lastIndex = match.index + match[0].length;
             }
 
@@ -187,7 +339,26 @@
                 '.gt-link{display:inline-block;margin-top:4px;font-size:0.9rem;color:#4a90e2;text-decoration:none;}',
                 '.gt-link:hover{text-decoration:underline;}',
                 '.tippy-box[data-theme~="light"]{background-color:#ffffff; border-radius:0.2rem;  border:1px solid #4a90e2;}',
-                '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;font-size:0.8rem; line-height:1;}'
+                '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;font-size:0.8rem; line-height:1;}',
+                '.gt-tabs{display:flex;border-bottom:1px solid #ddd;margin-bottom:8px;}',
+                '.gt-tab{flex:1;padding:4px 8px;border:none;background:none;cursor:pointer;font-size:0.8rem;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;}',
+                '.gt-tab--active{color:#4a90e2;border-bottom:2px solid #4a90e2;}',
+                '.gt-panel{display:none;}',
+                '.gt-panel--active{display:block;}',
+                '.gt-lb-trigger{background:none;border:none;padding:0;display:block;width:100%;cursor:zoom-in;}',
+                '.gt-lb-thumb{max-width:100%;border-radius:4px;display:block;}',
+                '#gt-lightbox{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;}',
+                '.gt-lb-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.75);}',
+                '.gt-lb-dialog{position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:8px;}',
+                '.gt-lb-img{max-width:90vw;max-height:80vh;border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);object-fit:contain;}',
+                '.gt-lb-caption{color:#eee;font-size:0.85rem;text-align:center;max-width:80vw;}',
+                '.gt-lb-close{position:absolute;top:-36px;right:0;background:none;border:none;color:#fff;font-size:28px;line-height:1;cursor:pointer;padding:0 4px;}',
+                '.gt-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}',
+                '.glossary-term:focus-visible{outline:2px solid #4a90e2;outline-offset:2px;border-radius:2px;}',
+                '.gt-tab:focus-visible{outline:2px solid #4a90e2;outline-offset:-2px;border-radius:2px;}',
+                '.gt-panel:focus-visible{outline:2px solid #4a90e2;outline-offset:-2px;border-radius:2px;}',
+                '.gt-lb-trigger:focus-visible{outline:2px solid #4a90e2;outline-offset:2px;border-radius:4px;}',
+                '.gt-lb-close:focus-visible{outline:2px solid #fff;outline-offset:2px;border-radius:2px;}'
             ].join('');
             document.head.appendChild(style);
         }
@@ -199,7 +370,71 @@
             interactive: true,
             maxWidth: 400,
             minWidth: 300,
+            // 'click' makes Enter/Space keyboard activation work on role="button" spans
+            trigger: 'mouseenter focus click',
+            // aria-describedby is set manually on each span pointing to the pre-rendered
+            // hidden description — tell Tippy not to overwrite it
+            aria: {
+                content: null,
+                expanded: 'auto'
+            },
             content: function (el) { return el.dataset.tippyContent; },
+            onShow: function (instance) {
+                instance.reference.setAttribute('aria-expanded', 'true');
+
+                // Collect all focusable elements inside the tooltip (visible only)
+                function getFocusable() {
+                    return Array.from(instance.popper.querySelectorAll(
+                        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                    )).filter(function (el) { return el.offsetParent !== null; });
+                }
+
+                instance._gtKbHandler = function (e) {
+                    var ref = instance.reference;
+
+                    // Tab from term → jump into first focusable tooltip element
+                    if (e.key === 'Tab' && !e.shiftKey && document.activeElement === ref) {
+                        var focusable = getFocusable();
+                        if (focusable.length) { e.preventDefault(); focusable[0].focus(); }
+                        return;
+                    }
+
+                    // Shift+Tab from first focusable in tooltip → return to term
+                    if (e.key === 'Tab' && e.shiftKey) {
+                        var focusable = getFocusable();
+                        if (focusable.length && document.activeElement === focusable[0]) {
+                            e.preventDefault();
+                            ref.focus();
+                        }
+                        return;
+                    }
+
+                    // Tab past the last focusable in tooltip → close and let page flow continue
+                    if (e.key === 'Tab' && !e.shiftKey) {
+                        var focusable = getFocusable();
+                        if (focusable.length && document.activeElement === focusable[focusable.length - 1]) {
+                            instance.hide();
+                            // Don't preventDefault — let the browser move to the next page element
+                        }
+                        return;
+                    }
+
+                    // Escape from anywhere inside tooltip → close and return focus to term
+                    if (e.key === 'Escape' && instance.popper.contains(document.activeElement)) {
+                        e.stopPropagation();
+                        instance.hide();
+                        ref.focus();
+                    }
+                };
+                document.addEventListener('keydown', instance._gtKbHandler);
+            },
+            onHide: function (instance) {
+                instance.reference.setAttribute('aria-expanded', 'false');
+                if (instance._gtKbHandler) {
+                    document.removeEventListener('keydown', instance._gtKbHandler);
+                    instance._gtKbHandler = null;
+                }
+            },
             onShown: function (instance) {
                 typesetTooltip(instance.popper);
             }
@@ -246,6 +481,12 @@
     function cleanup() {
         document.querySelectorAll('.glossary-term').forEach(function (span) {
             if (span._tippy) span._tippy.destroy();
+            // Remove the paired hidden description element
+            var descId = span.getAttribute('aria-describedby');
+            if (descId) {
+                var descEl = document.getElementById(descId);
+                if (descEl) descEl.remove();
+            }
             span.parentNode.replaceChild(document.createTextNode(span.textContent), span);
         });
     }
