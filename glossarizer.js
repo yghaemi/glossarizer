@@ -386,40 +386,16 @@
         }
         var termData = termMap[match[0].toLowerCase()];
 
-        // Pre-render a plain-text, visually-hidden description so ANDI and
-        // screen readers can always find the definition in the static DOM —
-        // independent of whether Tippy has mounted its tooltip yet.
-        var descId =
-          "gt-desc-" + (window._gtDescId = (window._gtDescId || 0) + 1);
-        var descEl = document.createElement("span");
-        descEl.id = descId;
-        descEl.className = "gt-sr-only";
-        descEl.setAttribute("role", "tooltip");
-        descEl.textContent =
-          (termData.definition ? fixLatex(termData.definition) : "") +
-          (termData.source ? " Source: " + termData.source : "");
-
-        var span = document.createElement("span");
-        span.className = "glossary-term";
-        span.textContent = match[0];
-        span.style.cssText =
-          "border-bottom:1px dotted currentColor;cursor:help;";
-        span.setAttribute("role", "button");
-        span.setAttribute("tabindex", "0");
-        span.setAttribute("aria-haspopup", "dialog");
-        span.setAttribute("aria-expanded", "false");
-        // Point directly at the always-present hidden description
-        span.setAttribute("aria-describedby", descId);
-        // Enter and Space must fire click so Tippy's 'click' trigger activates
-        span.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.currentTarget.click();
-          }
-        });
-        span.dataset.tippyContent = buildTooltipHTML(termData);
-        frag.appendChild(span);
-        frag.appendChild(descEl); // must follow span in DOM
+        // Use a real <button> — gets Enter/Space for free, correct accessible name
+        // (the button text), and no need for role="button" or keydown hacks.
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "glossary-term";
+        btn.textContent = match[0];
+        btn.setAttribute("aria-haspopup", "dialog");
+        btn.setAttribute("aria-expanded", "false");
+        btn.dataset.tippyContent = buildTooltipHTML(termData);
+        frag.appendChild(btn);
         lastIndex = match.index + match[0].length;
       }
 
@@ -439,13 +415,14 @@
       style = document.createElement("style");
       style.id = "gt-styles";
       style.textContent = [
-        ".gt-tooltip{max-width:280px;line-height:1;color:#000; font-size:0.9rem; line-height:1; border-radius:0.5rem;}",
+        ".gt-tooltip{width:380px;line-height:1;color:#000; font-size:0.9rem; line-height:1; border-radius:0.5rem;}",
         ".gt-img-wrap{margin-bottom:8px;display:flex;justify-content:center;flex-direction:column;}",
         ".gt-caption{margin:4px 0 0;font-size:0.9rem!important,font-weight:normal!important;color:#4f4545;text-align:center;}",
         ".gt-definition{margin:0 0 6px; font-size:0.9rem!important; line-height:1.5!important; font-weight:normal!important;}",
         ".gt-source{margin:4px 0;font-size:0.9rem;color:#aaa;}",
         ".gt-link{display:inline-block;margin-top:4px;font-size:0.9rem;color:#4a90e2;text-decoration:none;}",
         ".gt-link:hover{text-decoration:underline;}",
+        "button.glossary-term{border:none;border-bottom:1px dotted currentColor;background:none;padding:0;margin:0;font:inherit;color:inherit;cursor:help;display:inline;}",
         '.tippy-box[data-theme~="light"]{background-color:#ffffff; border-radius:0.2rem;  border:1px solid #4a90e2;}',
         '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;font-size:0.8rem; line-height:1;}',
         ".gt-tabs{display:flex;border-bottom:1px solid #ddd;margin-bottom:8px;}",
@@ -480,12 +457,12 @@
       interactive: true,
       maxWidth: 400,
       minWidth: 300,
-      // 'click' makes Enter/Space keyboard activation work on role="button" spans
-      trigger: "mouseenter focus click",
-      // aria-describedby is set manually on each span pointing to the pre-rendered
-      // hidden description — tell Tippy not to overwrite it
+      // No "focus" trigger — opening on focus interrupts screen reader reading order.
+      // The native <button> handles Enter/Space via "click" automatically.
+      trigger: "mouseenter click",
+      hideOnClick: true,
       aria: {
-        content: null,
+        content: "describedby",  // sets aria-describedby on the button while open
         expanded: "auto",
       },
       content: function (el) {
@@ -532,14 +509,15 @@
             return;
           }
 
-          // Escape from anywhere inside tooltip → close and return focus to term
-          if (
-            e.key === "Escape" &&
-            instance.popper.contains(document.activeElement)
-          ) {
-            e.stopPropagation();
-            instance.hide();
-            ref.focus();
+          // Escape from the button or anywhere inside the tooltip → close
+          if (e.key === "Escape") {
+            var active = document.activeElement;
+            if (active === ref || instance.popper.contains(active)) {
+              e.preventDefault();
+              e.stopPropagation();
+              instance.hide();
+              ref.focus();
+            }
           }
         };
         document.addEventListener("keydown", instance._gtKbHandler);
@@ -617,18 +595,9 @@
 
   // ---- Cleanup previously injected tooltips and spans before re-running ----
   function cleanup() {
-    document.querySelectorAll(".glossary-term").forEach(function (span) {
-      if (span._tippy) span._tippy.destroy();
-      // Remove the paired hidden description element
-      var descId = span.getAttribute("aria-describedby");
-      if (descId) {
-        var descEl = document.getElementById(descId);
-        if (descEl) descEl.remove();
-      }
-      span.parentNode.replaceChild(
-        document.createTextNode(span.textContent),
-        span,
-      );
+    document.querySelectorAll(".glossary-term").forEach(function (el) {
+      if (el._tippy) el._tippy.destroy();
+      el.parentNode.replaceChild(document.createTextNode(el.textContent), el);
     });
   }
 
