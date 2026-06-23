@@ -159,6 +159,10 @@ function setCache(coverID, library, data) {
 
 // ---- Main ----
 document.addEventListener("DOMContentLoaded", function () {
+  var _s = document.createElement("style");
+  _s.textContent = ".glossaryTerm{font-weight:bold;}";
+  document.head.appendChild(_s);
+
   const pageIdEl = document.getElementById("pageId");
   if (!pageIdEl) {
     document.getElementById("glossary-output").textContent =
