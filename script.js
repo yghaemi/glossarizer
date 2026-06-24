@@ -1,5 +1,5 @@
 // ---- Config ----
-const API_HOST = "https://perl-thomas-kidney-findlaw.trycloudflare.com";
+const API_HOST = "https://world-bowl-homes-trek.trycloudflare.com";
 const page_url = window.location.hostname;
 const CACHE_KEY = "glossary_data";
 const CACHE_TTL = 60 * 60 * 1000;
