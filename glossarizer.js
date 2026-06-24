@@ -219,9 +219,9 @@
     // ---- Definition panel ----
     var defParts = [];
     defParts.push(
-      '<p class="gt-definition">' +
+      '<span class="gt-definition">' +
         escapeHTML(fixLatex(item.definition)) +
-        "</p>",
+        "</span>",
     );
 
     // ---- Attribution panel ----
@@ -232,7 +232,7 @@
     var termAttrParts = [];
     if (hasValue(item.author)) {
       termAttrParts.push(
-        '<p class="gt-attr-row"><span class="gt-attr-label">Author: </span>' +
+        '<span class="gt-attr-row"><span class="gt-attr-label">Author: </span>' +
           escapeHTML(item.author) +
           "</p>",
       );
@@ -314,7 +314,7 @@
           imgSrc +
           '" alt="" aria-hidden="true" />' +
           "</button>" +
-          (imgCaption ? '<p class="gt-caption">' + imgCaption + "</p>" : "") +
+          (imgCaption ? '<span class="gt-caption">' + imgCaption + "</span>" : "") +
           "</div>",
       );
     }
@@ -518,7 +518,7 @@
         ".gt-tab--active{color:#4a90e2;border-bottom:2px solid #4a90e2;}",
         ".gt-panel{display:none;}",
         ".gt-panel--active{display:block;}",
-        ".gt-attr-row{margin:0 0 6px;font-size:0.9rem;display:flex;gap:6px;}",
+        ".gt-attr-row{margin:0 0 6px;font-size:0.9rem!important;display:flex;gap:6px;}",
         ".gt-attr-label{font-weight:600;color:#555;min-width:52px;}",
         ".gt-lb-trigger{background:none;border:none;padding:0;display:flex;justify-content:center;width:100%;cursor:zoom-in;}",
         ".gt-lb-thumb{max-width:100%;border-radius:4px;display:block;}",
