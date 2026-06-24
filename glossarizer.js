@@ -534,7 +534,7 @@
         ".gt-panel:focus-visible{outline:2px solid #4a90e2;outline-offset:-2px;border-radius:2px;}",
         ".gt-lb-trigger:focus-visible{outline:2px solid #4a90e2;outline-offset:2px;border-radius:4px;}",
         ".gt-lb-close:focus-visible{outline:2px solid #fff;outline-offset:2px;border-radius:2px;}",
-        ".glossaryElement{font-size:0.9rem;}",
+        ".glossaryElement{font-size:0.9rem!important;}",
       ].join("");
       document.head.appendChild(style);
     }
