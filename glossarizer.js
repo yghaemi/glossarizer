@@ -232,7 +232,7 @@
     var termAttrParts = [];
     if (hasValue(item.author)) {
       termAttrParts.push(
-        '<p class="gt-attr-row"><span class="gt-attr-label">Author</span>' +
+        '<p class="gt-attr-row"><span class="gt-attr-label">Author: </span>' +
           escapeHTML(item.author) +
           "</p>",
       );
@@ -243,14 +243,14 @@
           ? license_map[item.source]
           : item.source;
       termAttrParts.push(
-        '<p class="gt-attr-row"><span class="gt-attr-label">License</span>' +
+        '<p class="gt-attr-row"><span class="gt-attr-label">License: </span>' +
           escapeHTML(licenseText) +
           "</p>",
       );
     }
     if (hasValue(item.aliases) && item.aliases.length > 0) {
       termAttrParts.push(
-        '<p class="gt-attr-row"><span class="gt-attr-label">Aliases</span>' +
+        '<p class="gt-attr-row"><span class="gt-attr-label">Aliases: </span>' +
           escapeHTML(item.aliases.join(", ")) +
           "</p>",
       );
@@ -526,7 +526,7 @@
         ".gt-lb-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.75);}",
         ".gt-lb-dialog{position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:8px;}",
         ".gt-lb-img{max-width:90vw;max-height:80vh;border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,0.5);object-fit:contain;}",
-        ".gt-lb-caption{color:#eee;font-size:0.9rem;text-align:center;max-width:80vw;}",
+        ".gt-lb-caption{color:#eee;font-size:0.9rem!important;font-weight:normal!important;text-align:center;max-width:80vw;}",
         ".gt-lb-close{position:absolute;top:-36px;right:0;background:none;border:none;color:#fff;font-size:0.9rem;line-height:1;cursor:pointer;padding:0 4px;}",
         ".gt-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}",
         ".glossary-term:focus-visible{outline:2px solid #4a90e2;outline-offset:2px;border-radius:2px;}",
