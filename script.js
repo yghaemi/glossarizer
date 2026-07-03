@@ -1,6 +1,6 @@
 // ---- Config ----
-// const API_HOST = "https://commons.libretexts.org";
-const API_HOST = "http://localhost:5000";
+const API_HOST = "https://commons.libretexts.org";
+// const API_HOST = "http://localhost:5000";
 const page_url = window.location.hostname;
 const CACHE_KEY = "glossary_data";
 const CACHE_TTL = 60 * 60 * 1000;
