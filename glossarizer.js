@@ -714,11 +714,11 @@
         }
       },
       onShown: function (instance) {
-        setTimeout(() => {
-          typesetTooltip(instance.popper, function () {
-            if (instance.popperInstance) instance.popperInstance.update();
-          });
-        }, 300);
+        typesetTooltip(instance.popper, function () {
+          if (instance.popperInstance) instance.popperInstance.update();
+          var tip = instance.popper.querySelector(".gt-tooltip");
+          if (tip) tip.classList.add("gt-ready");
+        });
       },
     });
   }
