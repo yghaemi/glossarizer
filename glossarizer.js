@@ -116,6 +116,8 @@
     function run() {
       var target = el.querySelector(".gt-tooltip") || el;
       console.log("TOOLTIP HTML AT TYPESET:", target.innerHTML); // TEMP — remove after debugging
+      console.log("running in iframe:", window.self !== window.top); // TEMP
+      console.log("MathJax typeof:", typeof MathJax, "| has typesetPromise:", !!(window.MathJax && window.MathJax.typesetPromise)); // TEMP
       if (MathJax.typesetClear) MathJax.typesetClear([target]);
       return MathJax.typesetPromise([target])
         .then(function () {
