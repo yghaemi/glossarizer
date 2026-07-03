@@ -65,7 +65,11 @@ function unescapeLatex(str) {
     .replace(/\\\$/g, "$"); // \$ → $
 }
 
-// Configure mhchem before MathJax loads (pre-config is picked up at MathJax startup)
+// Configure MathJax before it loads (pre-config is picked up at MathJax startup).
+// Adds mhchem, and turns on the accessible SVG pipeline (semantic enrichment +
+// speech + braille) so math renders like the LibreTexts pages. The v4
+// combined SVG component (tex-mml-svg.js) enables these by default; setting
+// them explicitly keeps the behavior if a non-combined build is ever used.
 (function () {
   var existing = window.MathJax || {};
   var loaderLoad = [].concat((existing.loader || {}).load || []);
@@ -75,9 +79,23 @@ function unescapeLatex(str) {
   var plus = [].concat(texPkgs["[+]"] || []);
   if (plus.indexOf("mhchem") === -1) plus.push("mhchem");
   texPkgs["[+]"] = plus;
+
+  var existingOptions = existing.options || {};
+  var existingMenu = existingOptions.menuOptions || {};
+  var existingSettings = existingMenu.settings || {};
+
   window.MathJax = Object.assign(existing, {
     loader: Object.assign(existing.loader || {}, { load: loaderLoad }),
     tex: Object.assign(existing.tex || {}, { packages: texPkgs }),
+    options: Object.assign(existingOptions, {
+      menuOptions: Object.assign(existingMenu, {
+        settings: Object.assign(existingSettings, {
+          enrich: true,
+          speech: true,
+          braille: true,
+        }),
+      }),
+    }),
   });
 })();
 
