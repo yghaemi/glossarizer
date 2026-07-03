@@ -221,8 +221,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const pageIdEl = document.getElementById("pageId");
   if (!pageIdEl) {
-    document.getElementById("glossary-output").textContent =
-      "Error: pageId element not found";
+    // document.getElementById("glossary-output").textContent =
+    //   "Error: pageId element not found";
     return;
   }
 
@@ -305,7 +305,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     })
     .catch(function (error) {
-      document.getElementById("glossary-output").textContent =
-        "Error: " + error.message;
+      // document.getElementById("glossary-output").textContent =
+      //   "Error: " + error.message;
     });
 });
