@@ -189,7 +189,7 @@ function renderTable(terms) {
       const pagesLinks = item.pages
         ?.map(
           (page, index) =>
-            `<a href="https://${library}.libretexts.org/@go/page/${page}" target="_blank">(${index + 1})</a>`,
+            `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`,
         )
         .join("");
       return (
