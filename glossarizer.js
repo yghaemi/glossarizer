@@ -163,33 +163,6 @@
     }
   }
 
-  // Skip page-level MathJax auto-typeset on tooltip HTML until we explicitly
-  // typeset on mount — otherwise LibreTexts page MathJax races Tippy and
-  // leaves raw "\(...\)" text or half-processed markup.
-  var GT_TOOLTIP_CLASS = "gt-tooltip tex2jax_ignore";
-
-  function tooltipNeedsTypeset(popper) {
-    if (!popper) return false;
-    var root = popper.querySelector(".gt-tooltip") || popper;
-    if (root.querySelector("mjx-container")) return false;
-    return /\\[\(\[$]/.test(root.textContent || "");
-  }
-
-  function scheduleTooltipTypeset(instance) {
-    if (!instance || !instance.popper) return;
-    if (instance._gtTypesetPending) return;
-    instance._gtTypesetPending = true;
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        instance._gtTypesetPending = false;
-        if (!instance.state || !instance.state.isVisible) return;
-        typesetTooltip(instance.popper, function () {
-          if (instance.popperInstance) instance.popperInstance.update();
-        });
-      });
-    });
-  }
-
   // ---- Lightbox ----
   window._gtOpenLightbox = function (src, alt, caption) {
     var existing = document.getElementById("gt-lightbox");
@@ -428,13 +401,7 @@
 
     // No image and no attribution — return simple layout without tabs
     if (!hasImage && !hasAttribution) {
-      return (
-        '<div class="' +
-        GT_TOOLTIP_CLASS +
-        '" data-mjx="ignore">' +
-        defParts.join("") +
-        "</div>"
-      );
+      return '<div class="gt-tooltip">' + defParts.join("") + "</div>";
     }
 
     // ---- Tabbed layout (Definition always + optional Image + optional Attribution) ----
@@ -511,9 +478,7 @@
       .join("");
 
     return (
-      '<div class="' +
-      GT_TOOLTIP_CLASS +
-      '" data-mjx="ignore">' +
+      '<div class="gt-tooltip">' +
       '<div class="gt-tabs" role="tablist" aria-label="' +
       term +
       ' sections">' +
@@ -694,10 +659,6 @@
           return "";
         }
       },
-      onMount: function (instance) {
-        if (instance.popper) instance.popper._gtTippy = instance;
-        scheduleTooltipTypeset(instance);
-      },
       onShow: function (instance) {
         instance.reference.setAttribute("aria-expanded", "true");
         if (instance.popper) instance.popper._gtTippy = instance;
@@ -777,12 +738,9 @@
         }
       },
       onShown: function (instance) {
-        // Fallback if page MathJax ran after onMount but before render finished
-        if (tooltipNeedsTypeset(instance.popper)) {
-          scheduleTooltipTypeset(instance);
-        } else if (instance.popperInstance) {
-          instance.popperInstance.update();
-        }
+        typesetTooltip(instance.popper, function () {
+          if (instance.popperInstance) instance.popperInstance.update();
+        });
       },
     });
   }
