@@ -1,5 +1,6 @@
 // ---- Config ----
-const API_HOST = "https://commons.libretexts.org";
+// const API_HOST = "https://commons.libretexts.org";
+const API_HOST = "http://localhost:5000";
 const page_url = window.location.hostname;
 const CACHE_KEY = "glossary_data";
 const CACHE_TTL = 60 * 60 * 1000;
@@ -57,12 +58,39 @@ document.addEventListener("keydown", function (e) {
 });
 
 function unescapeLatex(str) {
-  return str
-    .replace(/\\\\\(/g, "\\(") // \\( → \(
-    .replace(/\\\\\)/g, "\\)") // \\) → \)
-    .replace(/\\\\\[/g, "\\[") // \\[ → \[
-    .replace(/\\\\\]/g, "\\]") // \\] → \]
-    .replace(/\\\$/g, "$"); // \$ → $
+  if (str == null) return "";
+  var s = String(str);
+  var prev;
+
+  // API JSON stores TeX as "\\(63.2\\%\\)" which becomes "\(63.2\%\)" after
+  // JSON.parse. If the string is double-encoded in JS, collapse until stable.
+  do {
+    prev = s;
+    s = s
+      .replace(/\\\\\(/g, "\\(")
+      .replace(/\\\\\)/g, "\\)")
+      .replace(/\\\\\[/g, "\\[")
+      .replace(/\\\\\]/g, "\\]")
+      .replace(/\\\\%/g, "\\%")
+      .replace(/\\\\#/g, "\\#")
+      .replace(/\\\\&/g, "\\&")
+      .replace(/\\\\_/g, "\\_")
+      .replace(/\\\$/g, "$");
+  } while (s !== prev);
+
+  // If payload has "\(63.2%\)" (no backslash before %), TeX treats % as a
+  // comment and swallows the closing "\)" — MathJax shows raw text or nothing.
+  s = s.replace(/\\\(([\s\S]*?)\\\)/g, function (_, inner) {
+    return (
+      "\\(" +
+      inner.replace(/(^|[^\\])%/g, function (m, prefix) {
+        return prefix + "\\%";
+      }) +
+      "\\)"
+    );
+  });
+
+  return s;
 }
 
 // Configure MathJax before it loads (pre-config is picked up at MathJax startup).
@@ -101,7 +129,9 @@ function unescapeLatex(str) {
 
 function triggerMathJax() {
   function typeset() {
-    MathJax.typesetPromise([document.getElementById("glossary-output")])
+    var el = document.getElementById("glossary-output");
+    if (!el) return;
+    MathJax.typesetPromise([el])
       .then(function () {
         console.log("MathJax typeset done");
       })
@@ -110,18 +140,10 @@ function triggerMathJax() {
       });
   }
 
-  function typesetWhenReady() {
-    if (typeof MathJax === "undefined" || !MathJax.typesetPromise) return false;
-    typeset();
-    return true;
-  }
-
-  // MathJax already loaded — ensure mhchem is present then typeset
-  if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
+  function runTypeset() {
     if (MathJax.loader && typeof MathJax.loader.load === "function") {
       Promise.resolve(MathJax.loader.load("[tex]/mhchem"))
         .then(function () {
-          // Register package with the TeX input jax if not already present
           if (MathJax.config && MathJax.config.tex) {
             var p = (MathJax.config.tex.packages =
               MathJax.config.tex.packages || {});
@@ -137,12 +159,23 @@ function triggerMathJax() {
     } else {
       typeset();
     }
-    return;
   }
 
-  // Poll until page's MathJax is ready
+  function whenReady(cb) {
+    if (typeof MathJax === "undefined" || !MathJax.typesetPromise) return false;
+    if (MathJax.startup && MathJax.startup.promise) {
+      MathJax.startup.promise.then(cb).catch(cb);
+    } else {
+      cb();
+    }
+    return true;
+  }
+
+  if (whenReady(runTypeset)) return;
+
+  // Poll until page MathJax is ready (LibreTexts loads it async)
   var interval = setInterval(function () {
-    if (typesetWhenReady()) {
+    if (whenReady(runTypeset)) {
       clearInterval(interval);
       console.log("MathJax ready — typesetting glossary");
     }

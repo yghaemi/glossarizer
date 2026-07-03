@@ -80,28 +80,86 @@
   // Reuse script.js's unescapeLatex if present, else local fallback
   function fixLatex(str) {
     if (typeof unescapeLatex === "function") return unescapeLatex(str);
-    return String(str)
-      .replace(/\\\\\(/g, "\\(")
-      .replace(/\\\\\)/g, "\\)")
-      .replace(/\\\\\[/g, "\\[")
-      .replace(/\\\\\]/g, "\\]")
-      .replace(/\\\$/g, "$");
+    if (str == null) return "";
+    var s = String(str);
+    var prev;
+    do {
+      prev = s;
+      s = s
+        .replace(/\\\\\(/g, "\\(")
+        .replace(/\\\\\)/g, "\\)")
+        .replace(/\\\\\[/g, "\\[")
+        .replace(/\\\\\]/g, "\\]")
+        .replace(/\\\\%/g, "\\%")
+        .replace(/\\\\#/g, "\\#")
+        .replace(/\\\\&/g, "\\&")
+        .replace(/\\\\_/g, "\\_")
+        .replace(/\\\$/g, "$");
+    } while (s !== prev);
+    s = s.replace(/\\\(([\s\S]*?)\\\)/g, function (_, inner) {
+      return (
+        "\\(" +
+        inner.replace(/(^|[^\\])%/g, function (m, prefix) {
+          return prefix + "\\%";
+        }) +
+        "\\)"
+      );
+    });
+    return s;
   }
 
-  // Typeset math (incl. mhchem \ce) inside a tooltip once it's shown
-  function typesetTooltip(el) {
-    if (typeof MathJax === "undefined" || !MathJax.typesetPromise) return;
-    var run = function () {
-      MathJax.typesetPromise([el]).catch(function (err) {
-        console.error("MathJax tooltip typeset error:", err);
-      });
-    };
-    // Ensure mhchem is available before typesetting.
-    // Runtime MathJax.loader.load is variadic and expects string args (not an array).
-    if (MathJax.loader && typeof MathJax.loader.load === "function") {
-      Promise.resolve(MathJax.loader.load("[tex]/mhchem")).then(run).catch(run);
-    } else {
-      run();
+  // Typeset math (incl. mhchem \ce) inside a tooltip once it's shown.
+  // Waits for MathJax startup (v4 on LibreTexts loads async), clears any
+  // stale markup from a previous open, then repositions the Tippy popper
+  // after SVG layout changes the tooltip size.
+  function typesetTooltip(el, done) {
+    function run() {
+      var target = el.querySelector(".gt-tooltip") || el;
+      if (MathJax.typesetClear) MathJax.typesetClear([target]);
+      return MathJax.typesetPromise([target])
+        .then(function () {
+          if (typeof done === "function") done();
+        })
+        .catch(function (err) {
+          console.error("MathJax tooltip typeset error:", err);
+        });
+    }
+
+    function whenReady(cb) {
+      if (typeof MathJax === "undefined" || !MathJax.typesetPromise) {
+        var tries = 0;
+        var interval = setInterval(function () {
+          tries++;
+          if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
+            clearInterval(interval);
+            cb();
+          } else if (tries > 100) {
+            clearInterval(interval);
+          }
+        }, 100);
+        return;
+      }
+      if (MathJax.startup && MathJax.startup.promise) {
+        MathJax.startup.promise.then(cb).catch(cb);
+      } else {
+        cb();
+      }
+    }
+
+    whenReady(function () {
+      if (MathJax.loader && typeof MathJax.loader.load === "function") {
+        Promise.resolve(MathJax.loader.load("[tex]/mhchem")).then(run).catch(run);
+      } else {
+        run();
+      }
+    });
+  }
+
+  function updateTippyPopper(el) {
+    var box = el.closest && el.closest(".tippy-box");
+    var instance = box && box._gtTippy;
+    if (instance && instance.popperInstance) {
+      instance.popperInstance.update();
     }
   }
 
@@ -200,6 +258,14 @@
       p.classList.toggle("gt-panel--active", active);
       p.setAttribute("aria-hidden", active ? "false" : "true");
     });
+
+    // Typeset math in the newly visible panel (hidden panels are skipped by MathJax)
+    var panel = tooltip.querySelectorAll(".gt-panel")[idx];
+    if (panel) {
+      typesetTooltip(panel, function () {
+        updateTippyPopper(tooltip);
+      });
+    }
   };
 
   // Arrow-key navigation between tabs (ARIA tabs pattern)
@@ -232,10 +298,10 @@
 
     // ---- Definition panel ----
     var defParts = [];
+    // Match script.js: unescape LaTeX delimiters only — do not HTML-escape,
+    // or MathJax sees &lt; instead of < and raw delimiters fail to parse.
     defParts.push(
-      '<p class="gt-definition">' +
-        escapeHTML(fixLatex(item.definition)) +
-        "</p>",
+      '<p class="gt-definition">' + fixLatex(item.definition) + "</p>",
     );
 
     // ---- Attribution panel ----
@@ -291,7 +357,7 @@
 
       // Build caption string: "Caption (License; author via source)"
       var captionBase = hasValue(item.caption)
-        ? escapeHTML(fixLatex(item.caption))
+        ? fixLatex(item.caption)
         : "";
       var imgAttrParts = [];
       if (hasValue(item.imageLicense))
@@ -502,7 +568,7 @@
         btn.textContent = match[0];
         btn.setAttribute("aria-haspopup", "dialog");
         btn.setAttribute("aria-expanded", "false");
-        btn.dataset.gtContent = buildTooltipHTML(termData);
+        btn.dataset.gtItem = JSON.stringify(termData);
 
         var canonical = (termData.term || match[0]).toLowerCase();
         if (!anchored[canonical]) {
@@ -585,10 +651,17 @@
         expanded: "auto",
       },
       content: function (el) {
-        return el.dataset.gtContent;
+        // Build HTML on open so LaTeX backslashes (e.g. \%) are not corrupted
+        // by storing pre-rendered markup in a data-* attribute.
+        try {
+          return buildTooltipHTML(JSON.parse(el.dataset.gtItem));
+        } catch (e) {
+          return "";
+        }
       },
       onShow: function (instance) {
         instance.reference.setAttribute("aria-expanded", "true");
+        if (instance.popper) instance.popper._gtTippy = instance;
 
         // Collect all focusable elements inside the tooltip (visible only)
         function getFocusable() {
@@ -665,7 +738,9 @@
         }
       },
       onShown: function (instance) {
-        typesetTooltip(instance.popper);
+        typesetTooltip(instance.popper, function () {
+          if (instance.popperInstance) instance.popperInstance.update();
+        });
       },
     });
   }
