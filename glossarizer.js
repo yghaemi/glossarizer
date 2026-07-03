@@ -714,9 +714,11 @@
         }
       },
       onShown: function (instance) {
-        typesetTooltip(instance.popper, function () {
-          if (instance.popperInstance) instance.popperInstance.update();
-        });
+        setTimeout(() => {
+          typesetTooltip(instance.popper, function () {
+            if (instance.popperInstance) instance.popperInstance.update();
+          });
+        }, 300);
       },
     });
   }
