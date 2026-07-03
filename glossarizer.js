@@ -126,6 +126,7 @@
           console.error("MathJax tooltip typeset error:", err);
         });
     }
+    run();
   }
 
   function updateTippyPopper(el) {
