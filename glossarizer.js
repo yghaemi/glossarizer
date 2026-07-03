@@ -481,7 +481,7 @@
         btn.textContent = match[0];
         btn.setAttribute("aria-haspopup", "dialog");
         btn.setAttribute("aria-expanded", "false");
-        btn.dataset.tippyContent = buildTooltipHTML(termData);
+        btn.dataset.gtContent = buildTooltipHTML(termData);
         frag.appendChild(btn);
         lastIndex = match.index + match[0].length;
       }
@@ -555,7 +555,7 @@
         expanded: "auto",
       },
       content: function (el) {
-        return el.dataset.tippyContent;
+        return el.dataset.gtContent;
       },
       onShow: function (instance) {
         instance.reference.setAttribute("aria-expanded", "true");

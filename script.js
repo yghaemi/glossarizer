@@ -106,7 +106,6 @@ function renderTable(terms) {
         " | " +
         '<span class="glossaryDefinition">' +
         unescapeLatex(item.definition) +
-        " " +
         `<sup>${pagesLinks}</sup>` +
         "</span>" +
         "</p>"
@@ -115,7 +114,7 @@ function renderTable(terms) {
     .join("");
 
   document.getElementById("glossary-output").innerHTML =
-    '<div id="visibleGlossary"><h2>Glossary</h2>' + rows + "</div>";
+    '<div id="visibleGlossary">' + rows + "</div>";
 
   requestAnimationFrame(function () {
     requestAnimationFrame(function () {
