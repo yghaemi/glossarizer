@@ -13,6 +13,49 @@ function extract_library(hostname) {
   return parts?.[0]?.toLowerCase() ?? "dev";
 }
 
+// Stable anchor id for a term. Must match termAnchorId() in glossarizer.js.
+function termAnchorId(term) {
+  return (
+    "gt-anchor-" +
+    String(term)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+  );
+}
+
+// Scroll to the first in-page appearance of a term (anchored by glossarizer.js)
+// and briefly highlight it, reflecting the anchor in the URL hash.
+function gtScrollToTerm(anchorId) {
+  var target = document.getElementById(anchorId);
+  if (!target) return false;
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  target.classList.remove("gt-flash");
+  // Force reflow so the animation restarts on repeated clicks
+  void target.offsetWidth;
+  target.classList.add("gt-flash");
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState(null, "", "#" + anchorId);
+  }
+  return true;
+}
+
+document.addEventListener("click", function (e) {
+  var el = e.target.closest && e.target.closest(".glossaryTerm[data-gt-target]");
+  if (!el) return;
+  e.preventDefault();
+  gtScrollToTerm(el.getAttribute("data-gt-target"));
+});
+
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+  var el = e.target.closest && e.target.closest(".glossaryTerm[data-gt-target]");
+  if (!el) return;
+  e.preventDefault();
+  gtScrollToTerm(el.getAttribute("data-gt-target"));
+});
+
 function unescapeLatex(str) {
   return str
     .replace(/\\\\\(/g, "\\(") // \\( → \(
@@ -100,7 +143,9 @@ function renderTable(terms) {
         .join("");
       return (
         '<p class="glossaryElement">' +
-        '<span class="glossaryTerm">' +
+        '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' +
+        termAnchorId(item.term) +
+        '">' +
         unescapeLatex(item.term) +
         "</span>" +
         " | " +
@@ -168,7 +213,10 @@ function setCache(coverID, library, data) {
 // ---- Main ----
 document.addEventListener("DOMContentLoaded", function () {
   var _s = document.createElement("style");
-  _s.textContent = ".glossaryTerm{font-weight:bold;}";
+  _s.textContent =
+    ".glossaryTerm{font-weight:bold;cursor:pointer;color:#4a90e2;}" +
+    ".glossaryTerm:hover{text-decoration:underline;}" +
+    ".glossaryTerm:focus-visible{outline:2px solid #4a90e2;outline-offset:2px;border-radius:2px;}";
   document.head.appendChild(_s);
 
   const pageIdEl = document.getElementById("pageId");

@@ -55,6 +55,20 @@
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
+  // Stable anchor id for a term so the glossary list can scroll to its first
+  // in-page appearance. Must match termAnchorId() in script.js.
+  function termAnchorId(term) {
+    return (
+      "gt-anchor-" +
+      String(term)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+    );
+  }
+  window._gtTermAnchorId = termAnchorId;
+
   function escapeHTML(str) {
     return String(str)
       .replace(/&/g, "&amp;")
@@ -442,6 +456,9 @@
           if (!el) return NodeFilter.FILTER_REJECT;
           if (skipTags.has(el.tagName)) return NodeFilter.FILTER_REJECT;
           if (el.closest(".glossary-term")) return NodeFilter.FILTER_REJECT;
+          // Don't glossarize the rendered glossary list itself; anchors should
+          // point at the page prose, not entries inside the list.
+          if (el.closest("#glossary-output")) return NodeFilter.FILTER_REJECT;
           if (regex.test(node.nodeValue)) {
             regex.lastIndex = 0;
             return NodeFilter.FILTER_ACCEPT;
@@ -455,6 +472,10 @@
     var nodes = [];
     var n;
     while ((n = walker.nextNode())) nodes.push(n);
+
+    // Only the first appearance (DOM order) of each canonical term gets an
+    // anchor id, so the glossary list scrolls to that first occurrence.
+    var anchored = {};
 
     nodes.forEach(function (textNode) {
       var text = textNode.nodeValue;
@@ -482,6 +503,13 @@
         btn.setAttribute("aria-haspopup", "dialog");
         btn.setAttribute("aria-expanded", "false");
         btn.dataset.gtContent = buildTooltipHTML(termData);
+
+        var canonical = (termData.term || match[0]).toLowerCase();
+        if (!anchored[canonical]) {
+          btn.id = termAnchorId(termData.term || match[0]);
+          anchored[canonical] = true;
+        }
+
         frag.appendChild(btn);
         lastIndex = match.index + match[0].length;
       }
@@ -535,6 +563,8 @@
         ".gt-lb-trigger:focus-visible{outline:2px solid #4a90e2;outline-offset:2px;border-radius:4px;}",
         ".gt-lb-close:focus-visible{outline:2px solid #fff;outline-offset:2px;border-radius:2px;}",
         ".glossaryElement{font-size:0.9rem!important;}",
+        ".glossary-term.gt-flash{animation:gt-flash 1.5s ease-out;}",
+        "@keyframes gt-flash{0%{background:#ffe9a8;}100%{background:transparent;}}",
       ].join("");
       document.head.appendChild(style);
     }
