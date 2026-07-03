@@ -115,44 +115,17 @@
   function typesetTooltip(el, done) {
     function run() {
       var target = el.querySelector(".gt-tooltip") || el;
+      console.log("TOOLTIP HTML AT TYPESET:", target.innerHTML); // TEMP — remove after debugging
       if (MathJax.typesetClear) MathJax.typesetClear([target]);
       return MathJax.typesetPromise([target])
         .then(function () {
+          console.log("TOOLTIP TYPESET DONE, now:", target.innerHTML); // TEMP
           if (typeof done === "function") done();
         })
         .catch(function (err) {
           console.error("MathJax tooltip typeset error:", err);
         });
     }
-
-    function whenReady(cb) {
-      if (typeof MathJax === "undefined" || !MathJax.typesetPromise) {
-        var tries = 0;
-        var interval = setInterval(function () {
-          tries++;
-          if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
-            clearInterval(interval);
-            cb();
-          } else if (tries > 100) {
-            clearInterval(interval);
-          }
-        }, 100);
-        return;
-      }
-      if (MathJax.startup && MathJax.startup.promise) {
-        MathJax.startup.promise.then(cb).catch(cb);
-      } else {
-        cb();
-      }
-    }
-
-    whenReady(function () {
-      if (MathJax.loader && typeof MathJax.loader.load === "function") {
-        Promise.resolve(MathJax.loader.load("[tex]/mhchem")).then(run).catch(run);
-      } else {
-        run();
-      }
-    });
   }
 
   function updateTippyPopper(el) {
