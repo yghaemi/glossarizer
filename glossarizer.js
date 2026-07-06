@@ -55,6 +55,27 @@
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
+  // Return an array of [start, end) ranges occupied by LaTeX delimiters in text.
+  // Covers $$...$$, \[...\], and \(...\).  Matches within these ranges must not
+  // be glossarized because the text is part of a math expression.
+  function getLatexRanges(text) {
+    var ranges = [];
+    var re = /\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)/g;
+    var m;
+    while ((m = re.exec(text)) !== null) {
+      ranges.push([m.index, m.index + m[0].length]);
+    }
+    return ranges;
+  }
+
+  function inLatexRange(index, len, ranges) {
+    var end = index + len;
+    for (var i = 0; i < ranges.length; i++) {
+      if (index < ranges[i][1] && end > ranges[i][0]) return true;
+    }
+    return false;
+  }
+
   // Stable anchor id for a term so the glossary list can scroll to its first
   // in-page appearance. Must match termAnchorId() in script.js.
   function termAnchorId(term) {
@@ -115,9 +136,7 @@
   function typesetTooltip(el, done) {
     function run() {
       var target = el.querySelector(".gt-tooltip") || el;
-      console.log("TOOLTIP HTML AT TYPESET:", target.innerHTML); // TEMP — remove after debugging
-      console.log("running in iframe:", window.self !== window.top); // TEMP
-      console.log("MathJax typeof:", typeof MathJax, "| has typesetPromise:", !!(window.MathJax && window.MathJax.typesetPromise)); // TEMP
+      console.log("TOOLTIP HTML AT TYPESET:", target.innerHTML); // TEMP
       if (MathJax.typesetClear) MathJax.typesetClear([target]);
       return MathJax.typesetPromise([target])
         .then(function () {
@@ -501,6 +520,9 @@
           // Don't glossarize the rendered glossary list itself; anchors should
           // point at the page prose, not entries inside the list.
           if (el.closest("#glossary-output")) return NodeFilter.FILTER_REJECT;
+          // Skip text nodes inside MathJax-rendered math containers.
+          if (el.closest("mjx-container, .MathJax, .MathJax_Display"))
+            return NodeFilter.FILTER_REJECT;
           if (regex.test(node.nodeValue)) {
             regex.lastIndex = 0;
             return NodeFilter.FILTER_ACCEPT;
@@ -521,6 +543,7 @@
 
     nodes.forEach(function (textNode) {
       var text = textNode.nodeValue;
+      var latexRanges = getLatexRanges(text);
       var frag = document.createDocumentFragment();
       var lastIndex = 0;
       var matched = false;
@@ -528,6 +551,7 @@
       regex.lastIndex = 0;
 
       while ((match = regex.exec(text)) !== null) {
+        if (inLatexRange(match.index, match[0].length, latexRanges)) continue;
         matched = true;
         if (match.index > lastIndex) {
           frag.appendChild(
