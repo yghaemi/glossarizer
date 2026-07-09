@@ -636,6 +636,7 @@
     }
 
     tippy(".glossary-term", {
+      animation: false,
       delay: [500, 0],
       theme: "light",
       allowHTML: true,
