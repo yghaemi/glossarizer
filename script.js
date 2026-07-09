@@ -265,9 +265,9 @@ function setCache(coverID, library, data) {
 document.addEventListener("DOMContentLoaded", function () {
   var _s = document.createElement("style");
   _s.textContent =
-    ".glossaryTerm{font-weight:bold;cursor:pointer;color:#4a90e2;}" +
+    ".glossaryTerm{font-weight:bold;cursor:pointer;}" +
     ".glossaryTerm:hover{text-decoration:underline;}" +
-    ".glossaryTerm:focus-visible{outline:2px solid #4a90e2;outline-offset:2px;border-radius:2px;}";
+    ".glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
   document.head.appendChild(_s);
 
   const pageIdEl = document.getElementById("pageId");
