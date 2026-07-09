@@ -263,6 +263,16 @@ function setCache(coverID, library, data) {
 
 // ---- Main ----
 document.addEventListener("DOMContentLoaded", function () {
+  // Remove any platform-injected legacy Glossarizer script/stylesheet so they
+  // don't conflict with the local bundled versions.
+  document
+    .querySelectorAll(
+      'script[src*="libretextsGlossarizer"], link[href*="libretextsGlossarizer"]',
+    )
+    .forEach(function (el) {
+      el.parentNode && el.parentNode.removeChild(el);
+    });
+
   var _s = document.createElement("style");
   _s.textContent =
     ".glossaryTerm{font-weight:bold;cursor:pointer;}" +
