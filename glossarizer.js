@@ -508,8 +508,11 @@
       "PRE",
     ]);
 
+    var contentRoot =
+      document.querySelector(".mt-content-container") || document.body;
+
     var walker = document.createTreeWalker(
-      document.body,
+      contentRoot,
       NodeFilter.SHOW_TEXT,
       {
         acceptNode: function (node) {
