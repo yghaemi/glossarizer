@@ -327,7 +327,7 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
         setCache(data.data.coverID, data.data.library, data.data);
-        renderGlossary(data.data);
+        renderGlossary(data.data.sort((a, b) => a.term.localeCompare(b.term)));
         document.dispatchEvent(
           new CustomEvent("glossary:updated", {
             detail: { coverID: data.data.coverID, library: data.data.library },
