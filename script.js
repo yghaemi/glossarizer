@@ -327,7 +327,8 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
         setCache(data.data.coverID, data.data.library, data.data);
-        renderGlossary(data.data.sort((a, b) => a.term.localeCompare(b.term)));
+        data.data.items.sort((a, b) => a.term.localeCompare(b.term));
+        renderGlossary(data.data);
         document.dispatchEvent(
           new CustomEvent("glossary:updated", {
             detail: { coverID: data.data.coverID, library: data.data.library },
@@ -355,6 +356,7 @@ document.addEventListener("DOMContentLoaded", function () {
         new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)
       ) {
         console.log("Glossary loaded from cache");
+        cached.items.sort((a, b) => a.term.localeCompare(b.term));
         renderGlossary(cached);
         document.dispatchEvent(
           new CustomEvent("glossary:updated", {
