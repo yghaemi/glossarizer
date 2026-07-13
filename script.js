@@ -276,7 +276,6 @@ document.addEventListener("DOMContentLoaded", function () {
   var _s = document.createElement("style");
   _s.textContent =
     ".glossaryTerm{font-weight:bold;cursor:pointer;}" +
-    ".glossaryTerm:hover{text-decoration:underline;}" +
     ".glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
   document.head.appendChild(_s);
 
