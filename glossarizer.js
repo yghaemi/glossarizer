@@ -135,19 +135,49 @@
   // after SVG layout changes the tooltip size.
   function typesetTooltip(el, done) {
     function run() {
+      if (typeof MathJax === "undefined" || !MathJax.typesetPromise) {
+        if (typeof done === "function") done();
+        return;
+      }
       var target = el.querySelector(".gt-tooltip") || el;
-      console.log("TOOLTIP HTML AT TYPESET:", target.innerHTML); // TEMP
-      if (MathJax.typesetClear) MathJax.typesetClear([target]);
-      return MathJax.typesetPromise([target])
+      try {
+        if (MathJax.typesetClear) MathJax.typesetClear([target]);
+      } catch (_) {}
+      MathJax.typesetPromise([target])
         .then(function () {
-          console.log("TOOLTIP TYPESET DONE, now:", target.innerHTML); // TEMP
           if (typeof done === "function") done();
         })
         .catch(function (err) {
           console.error("MathJax tooltip typeset error:", err);
+          if (typeof done === "function") done();
         });
     }
-    run();
+    // console.log("TYPESET TOOLTIP CALLED 2");
+    if (typeof MathJax === "undefined" || !MathJax.typesetPromise) {
+      // Poll until MathJax is ready (loaded async on the page)
+      var attempts = 0;
+      var poll = setInterval(function () {
+        if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
+          clearInterval(poll);
+          var ready =
+            MathJax.startup && MathJax.startup.promise
+              ? MathJax.startup.promise
+              : Promise.resolve();
+          ready.then(run).catch(run);
+        } else if (++attempts > 50) {
+          clearInterval(poll);
+        }
+      }, 100);
+      return;
+    }
+
+    // MathJax is available — wait for startup, then typeset regardless of
+    // whether startup succeeded or failed (mirrors script.js whenReady logic).
+    var ready =
+      MathJax.startup && MathJax.startup.promise
+        ? MathJax.startup.promise
+        : Promise.resolve();
+    ready.then(run).catch(run);
   }
 
   function updateTippyPopper(el) {
@@ -741,7 +771,9 @@
           instance._gtFocusHandler = null;
         }
       },
-      onShown: function (instance) {
+      // onMount fires after the popper is attached to the DOM.
+      // onShown (fires after CSS transition) is unreliable with animation:false.
+      onMount: function (instance) {
         typesetTooltip(instance.popper, function () {
           if (instance.popperInstance) instance.popperInstance.update();
           var tip = instance.popper.querySelector(".gt-tooltip");
