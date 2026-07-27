@@ -805,12 +805,7 @@
     var data = cached.data;
     if (!data || !data.items || !data.items.length) return;
 
-    var showAll = pageId === data.glossaryID;
-    var items = showAll
-      ? data.items
-      : data.items.filter(function (item) {
-          return item.pages.includes(pageId);
-        });
+    var items = data.items;
 
     if (!items.length) return;
 
