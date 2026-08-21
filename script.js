@@ -183,44 +183,66 @@ function triggerMathJax() {
 }
 
 function renderTable(terms) {
-  const library = extract_library(page_url);
-  var rows = terms
-    .map(function (item) {
-      const pagesLinks = item.pages
-        ?.map(
-          (page, index) =>
-            `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`,
-        )
-        .join("");
-      return (
-        '<p class="glossaryElement">' +
-        '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' +
-        termAnchorId(item.term) +
-        '">' +
-        unescapeLatex(item.term) +
-        "</span>" +
-        " | " +
-        '<span class="glossaryDefinition">' +
-        unescapeLatex(item.definition) +
-        `<sup>${pagesLinks}</sup>` +
-        "</span>" +
-        "</p>"
-      );
-    })
-    .join("");
+  try {
+    var out = document.getElementById("glossary-output");
+    if (!out) {
+      console.error("[glossary] render failed: #glossary-output not found");
+      return;
+    }
+    if (!Array.isArray(terms)) {
+      console.error("[glossary] render failed: terms is not an array", terms);
+      return;
+    }
 
-  document.getElementById("glossary-output").innerHTML =
-    '<div id="visibleGlossary">' + rows + "</div>";
+    const library = extract_library(page_url);
+    var rows = terms
+      .map(function (item) {
+        try {
+          const pagesLinks = item.pages
+            ?.map(
+              (page, index) =>
+                `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`,
+            )
+            .join("");
+          return (
+            '<p class="glossaryElement">' +
+            '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' +
+            termAnchorId(item.term) +
+            '">' +
+            unescapeLatex(item.term) +
+            "</span>" +
+            " | " +
+            '<span class="glossaryDefinition">' +
+            unescapeLatex(item.definition) +
+            `<sup>${pagesLinks}</sup>` +
+            "</span>" +
+            "</p>"
+          );
+        } catch (itemErr) {
+          console.error(
+            "[glossary] failed to render term:",
+            item && item.term,
+            itemErr,
+          );
+          return "";
+        }
+      })
+      .join("");
 
-  requestAnimationFrame(function () {
+    out.innerHTML = '<div id="visibleGlossary">' + rows + "</div>";
+
     requestAnimationFrame(function () {
-      console.log(
-        "HTML going to MathJax:",
-        document.getElementById("glossary-output").innerHTML,
-      );
-      triggerMathJax();
+      requestAnimationFrame(function () {
+        try {
+          triggerMathJax();
+        } catch (mjErr) {
+          console.error("[glossary] MathJax typeset failed:", mjErr);
+        }
+      });
     });
-  });
+  } catch (err) {
+    console.error("[glossary] renderTable failed:", err);
+  }
 }
 
 function cacheKey(coverID, library) {
@@ -281,8 +303,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const pageIdEl = document.getElementById("pageId");
   if (!pageIdEl) {
-    // document.getElementById("glossary-output").textContent =
-    //   "Error: pageId element not found";
+    console.error("[glossary] #pageId not found; skipping render");
     return;
   }
 
@@ -295,17 +316,23 @@ document.addEventListener("DOMContentLoaded", function () {
     "/library/" +
     library;
   function renderGlossary(data) {
-    if (!data || !data.items || !data.items.length) {
-      document.getElementById("glossary-output").textContent =
-        "No glossary terms found.";
-      return;
+    try {
+      if (!data || !data.items || !data.items.length) {
+        console.warn("[glossary] no terms to render", data);
+        var emptyOut = document.getElementById("glossary-output");
+        if (emptyOut) emptyOut.textContent = "No glossary terms found.";
+        else console.error("[glossary] #glossary-output not found");
+        return;
+      }
+      const showAll = pageId === data.glossaryID;
+      renderTable(
+        showAll
+          ? data.items
+          : data.items.filter((item) => item.pages.includes(pageId)),
+      );
+    } catch (err) {
+      console.error("[glossary] renderGlossary failed:", err);
     }
-    const showAll = pageId === data.glossaryID;
-    renderTable(
-      showAll
-        ? data.items
-        : data.items.filter((item) => item.pages.includes(pageId)),
-    );
   }
 
   function fetchFull() {
@@ -321,6 +348,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then(function (data) {
         if (!data || data.err === true || !data.data) {
+          console.error("[glossary] full fetch returned empty/error payload", data);
           document.getElementById("glossary-output").textContent =
             "No glossary terms found.";
           return;
@@ -333,6 +361,9 @@ document.addEventListener("DOMContentLoaded", function () {
             detail: { coverID: data.data.coverID, library: data.data.library },
           }),
         );
+      })
+      .catch(function (error) {
+        console.error("[glossary] full fetch/render failed:", error);
       });
   }
 
@@ -349,6 +380,7 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(function (details) {
       var coverInput = document.getElementById("coverID");
       if (coverInput) coverInput.value = details.coverID;
+      else console.warn("[glossary] #coverID input not found in DOM");
       var cached = getCached(details.coverID, library);
       if (
         cached &&
@@ -367,7 +399,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     })
     .catch(function (error) {
-      // document.getElementById("glossary-output").textContent =
-      //   "Error: " + error.message;
+      console.error("[glossary] freshness check failed:", error);
     });
 });
