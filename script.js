@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", function () {
         else console.error("[glossary] #glossary-output not found");
         return;
       }
-      const showAll = pageId === data.glossaryID;
+      const showAll = (pageId === data.glossaryID || window.location.pathname.endsWith("zz%3A_Back_Matter/20%3A_Glossary"));
       renderTable(
         showAll
           ? data.items
