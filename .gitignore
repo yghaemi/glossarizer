@@ -3,7 +3,7 @@ version.txt
 
 # node build
 node_modules/
-dist/
+
 # agents and agent configs
 .agents/
 .agent_configs/
