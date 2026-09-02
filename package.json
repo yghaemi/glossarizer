@@ -1,0 +1,21 @@
+{
+  "name": "glossarizer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Client-side glossary rendering and in-page term glossarizer for LibreTexts pages.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "tippy.js": "^6.3.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "dotenv": "^17.4.2",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3"
+  }
+}
