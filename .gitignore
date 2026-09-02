@@ -1,2 +1,20 @@
 index.html
 version.txt
+# agents and agent configs
+.agents/
+.agent_configs/
+.cursor/
+.claude/
+
+# logs and claude
+.logs/
+
+# environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.test
+.env.production
