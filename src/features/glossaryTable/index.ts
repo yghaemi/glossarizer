@@ -63,10 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
           if (out) out.textContent = "No glossary terms found.";
           return;
         }
-        setCache(data.data.coverID, data.data.library, data.data);
+        setCache(String(data.data.coverID), data.data.library, data.data);
         data.data.items.sort((a, b) => a.term.localeCompare(b.term));
         renderGlossary(data.data);
-        dispatchUpdated(data.data.coverID, data.data.library);
+        dispatchUpdated(String(data.data.coverID), data.data.library);
       })
       .catch((error) => console.error("[glossary] full fetch/render failed:", error));
   }

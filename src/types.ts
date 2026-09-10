@@ -1,7 +1,7 @@
 export interface GlossaryItem {
   term: string;
   definition: string;
-  pages: Array<string | number>;
+  pages: string[];
   aliases?: string[];
   author?: string;
   source?: string;
@@ -14,12 +14,23 @@ export interface GlossaryItem {
   imageSource?: string;
 }
 
+export type GlossaryConfigMode = "PAGE" | "CHAPTER" | "BACKMATTER";
+
+export interface GlossaryConfigGroup {
+  groupID: string;
+  pageIds: string[];
+  targetPageId: string;
+}
+
 export interface GlossaryData {
-  coverID: string;
+  coverID: number;
+  glossaryID: string;
   library: string;
-  glossaryID?: string;
-  lastUpdatedAt?: string;
   items: GlossaryItem[];
+  lastUpdatedAt: string;
+  mode: GlossaryConfigMode;
+  groups: GlossaryConfigGroup[];
+  showTermOnly: boolean;
 }
 
 export interface FreshnessResponse {
@@ -27,10 +38,17 @@ export interface FreshnessResponse {
   latestUpdatedAt: string;
 }
 
-export interface FullGlossaryResponse {
-  err?: boolean;
-  data?: GlossaryData;
+export interface GetGlossaryPageSuccess {
+  err: false;
+  data: GlossaryData;
 }
+
+export interface GetGlossaryPageError {
+  err: true;
+  errMsg: string;
+}
+
+export type FullGlossaryResponse = GetGlossaryPageSuccess | GetGlossaryPageError;
 
 export interface CachedEntry<T> {
   timestamp: number;
