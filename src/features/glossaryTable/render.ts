@@ -19,13 +19,6 @@ export function renderTable(
     const rows = terms
       .map((item) => {
         try {
-          const pagesLinks =
-            item.pages
-              ?.map(
-                (page, index) =>
-                  `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`,
-              )
-              .join("") ?? "";
           const termSpan =
             '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' +
             termAnchorId(item.term) +
@@ -33,8 +26,15 @@ export function renderTable(
             unescapeLatex(item.term) +
             "</span>";
           if (showTermOnly) {
-            return '<p class="glossaryElement">' + termSpan + `<sup>${pagesLinks}</sup>` + "</p>";
+            return '<p class="glossaryElement">' + termSpan + "</p>";
           }
+          const pagesLinks =
+            item.pages
+              ?.map(
+                (page, index) =>
+                  `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`,
+              )
+              .join("") ?? "";
           return (
             '<p class="glossaryElement">' +
             termSpan +
