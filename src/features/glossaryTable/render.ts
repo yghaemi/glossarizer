@@ -4,13 +4,8 @@ import { unescapeLatex } from "../../utils/latex";
 import { triggerMathJax } from "../../mathjax/typeset";
 import type { GlossaryItem } from "../../types";
 
-export function renderTable(terms: GlossaryItem[]): void {
+export function renderTable(terms: GlossaryItem[], container: HTMLElement): void {
   try {
-    const out = document.getElementById("glossary-output");
-    if (!out) {
-      console.error("[glossary] render failed: #glossary-output not found");
-      return;
-    }
     if (!Array.isArray(terms)) {
       console.error("[glossary] render failed: terms is not an array", terms);
       return;
@@ -48,7 +43,7 @@ export function renderTable(terms: GlossaryItem[]): void {
       })
       .join("");
 
-    out.innerHTML = '<div id="visibleGlossary">' + rows + "</div>";
+    container.innerHTML = '<div id="visibleGlossary">' + rows + "</div>";
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

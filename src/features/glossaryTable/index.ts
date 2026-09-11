@@ -2,6 +2,8 @@ import "./scroll"; // registers document-level click/keydown listeners for scrol
 import { extractLibrary } from "../../utils/library";
 import { getCached, setCache } from "../../utils/cache";
 import { renderTable } from "./render";
+import { selectGlossaryItems } from "./selectItems";
+import { resolveGlossaryContainer } from "./target";
 import { glossaryUrl, fetchFreshness, fetchFullGlossary } from "./api";
 import type { GlossaryData } from "../../types";
 
@@ -38,17 +40,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderGlossary(data: GlossaryData): void {
     try {
-      if (!data?.items?.length) {
-        console.warn("[glossary] no terms to render", data);
-        const emptyOut = document.getElementById("glossary-output");
-        if (emptyOut) emptyOut.textContent = "No glossary terms found.";
-        else console.error("[glossary] #glossary-output not found");
+      const items = selectGlossaryItems(data, pageId);
+
+      if (!items.length) {
+        console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
+        const existingOut = document.getElementById("glossary-output");
+        if (existingOut) existingOut.textContent = "No glossary terms found.";
         return;
       }
-      const showAll =
-        pageId === data.glossaryID ||
-        window.location.pathname.endsWith("zz%3A_Back_Matter/20%3A_Glossary");
-      renderTable(showAll ? data.items : data.items.filter((item) => item.pages.includes(pageId)));
+
+      const container = resolveGlossaryContainer();
+      if (!container) {
+        console.error("[glossary] no #glossary-output or footer found; skipping render");
+        return;
+      }
+      renderTable(items, container);
     } catch (err) {
       console.error("[glossary] renderGlossary failed:", err);
     }

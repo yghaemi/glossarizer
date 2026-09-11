@@ -235,13 +235,8 @@
   }
 
   // src/features/glossaryTable/render.ts
-  function renderTable(terms) {
+  function renderTable(terms, container) {
     try {
-      const out = document.getElementById("glossary-output");
-      if (!out) {
-        console.error("[glossary] render failed: #glossary-output not found");
-        return;
-      }
       if (!Array.isArray(terms)) {
         console.error("[glossary] render failed: terms is not an array", terms);
         return;
@@ -259,7 +254,7 @@
           return "";
         }
       }).join("");
-      out.innerHTML = '<div id="visibleGlossary">' + rows + "</div>";
+      container.innerHTML = '<div id="visibleGlossary">' + rows + "</div>";
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           try {
@@ -272,6 +267,37 @@
     } catch (err) {
       console.error("[glossary] renderTable failed:", err);
     }
+  }
+
+  // src/features/glossaryTable/selectItems.ts
+  function selectGlossaryItems(data, pageId) {
+    switch (data.mode) {
+      case "PAGE":
+        return data.items.filter((item) => item.pages.includes(pageId));
+      case "BACKMATTER":
+        return pageId === data.glossaryID ? data.items : [];
+      case "CHAPTER": {
+        const group = data.groups.find((g) => g.targetPageId === pageId);
+        if (!group) return [];
+        return data.items.filter((item) => item.pages.some((page) => group.pageIds.includes(page)));
+      }
+      default:
+        return [];
+    }
+  }
+
+  // src/features/glossaryTable/target.ts
+  var OUTPUT_ID = "glossary-output";
+  var FOOTER_SELECTOR = ".elm-content-footer";
+  function resolveGlossaryContainer() {
+    const existing = document.getElementById(OUTPUT_ID);
+    if (existing) return existing;
+    const footer = document.querySelector(FOOTER_SELECTOR);
+    if (!footer) return null;
+    const container = document.createElement("div");
+    container.id = OUTPUT_ID;
+    footer.appendChild(container);
+    return container;
   }
 
   // src/features/glossaryTable/api.ts
@@ -323,17 +349,20 @@
     const library = extractLibrary(window.location.hostname);
     const url = glossaryUrl(pageId, library);
     function renderGlossary(data) {
-      var _a;
       try {
-        if (!((_a = data == null ? void 0 : data.items) == null ? void 0 : _a.length)) {
-          console.warn("[glossary] no terms to render", data);
-          const emptyOut = document.getElementById("glossary-output");
-          if (emptyOut) emptyOut.textContent = "No glossary terms found.";
-          else console.error("[glossary] #glossary-output not found");
+        const items = selectGlossaryItems(data, pageId);
+        if (!items.length) {
+          console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
+          const existingOut = document.getElementById("glossary-output");
+          if (existingOut) existingOut.textContent = "No glossary terms found.";
           return;
         }
-        const showAll = pageId === data.glossaryID || window.location.pathname.endsWith("zz%3A_Back_Matter/20%3A_Glossary");
-        renderTable(showAll ? data.items : data.items.filter((item) => item.pages.includes(pageId)));
+        const container = resolveGlossaryContainer();
+        if (!container) {
+          console.error("[glossary] no #glossary-output or footer found; skipping render");
+          return;
+        }
+        renderTable(items, container);
       } catch (err) {
         console.error("[glossary] renderGlossary failed:", err);
       }
@@ -346,10 +375,10 @@
           if (out) out.textContent = "No glossary terms found.";
           return;
         }
-        setCache(data.data.coverID, data.data.library, data.data);
+        setCache(String(data.data.coverID), data.data.library, data.data);
         data.data.items.sort((a, b) => a.term.localeCompare(b.term));
         renderGlossary(data.data);
-        dispatchUpdated(data.data.coverID, data.data.library);
+        dispatchUpdated(String(data.data.coverID), data.data.library);
       }).catch((error) => console.error("[glossary] full fetch/render failed:", error));
     }
     console.log("Checking glossary freshness from:", url);
