@@ -353,8 +353,6 @@
         const items = selectGlossaryItems(data, pageId);
         if (!items.length) {
           console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
-          const existingOut = document.getElementById("glossary-output");
-          if (existingOut) existingOut.textContent = "No glossary terms found.";
           return;
         }
         const container = resolveGlossaryContainer();
@@ -371,8 +369,6 @@
       return fetchFullGlossary(url).then((data) => {
         if (!data || data.err === true || !data.data) {
           console.error("[glossary] full fetch returned empty/error payload", data);
-          const out = document.getElementById("glossary-output");
-          if (out) out.textContent = "No glossary terms found.";
           return;
         }
         setCache(String(data.data.coverID), data.data.library, data.data);
