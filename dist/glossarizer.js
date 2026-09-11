@@ -70,7 +70,7 @@
   }
 
   // src/config.ts
-  var API_HOST = "http://localhost:5000";
+  var API_HOST = "https://mario-substitute-unavailable-sir.trycloudflare.com";
   var CACHE_TTL = 60 * 60 * 1e3;
   var LICENSE_MAP = {
     arr: "All Rights Reserved",
