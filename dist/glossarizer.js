@@ -235,7 +235,7 @@
   }
 
   // src/features/glossaryTable/render.ts
-  function renderTable(terms, container) {
+  function renderTable(terms, container, showTermOnly) {
     try {
       if (!Array.isArray(terms)) {
         console.error("[glossary] render failed: terms is not an array", terms);
@@ -248,7 +248,11 @@
           const pagesLinks = (_b = (_a = item.pages) == null ? void 0 : _a.map(
             (page, index) => `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`
           ).join("")) != null ? _b : "";
-          return '<p class="glossaryElement"><span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '">' + unescapeLatex(item.term) + '</span> | <span class="glossaryDefinition">' + unescapeLatex(item.definition) + `<sup>${pagesLinks}</sup></span></p>`;
+          const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '">' + unescapeLatex(item.term) + "</span>";
+          if (showTermOnly) {
+            return '<p class="glossaryElement">' + termSpan + `<sup>${pagesLinks}</sup></p>`;
+          }
+          return '<p class="glossaryElement">' + termSpan + ' | <span class="glossaryDefinition">' + unescapeLatex(item.definition) + `<sup>${pagesLinks}</sup></span></p>`;
         } catch (itemErr) {
           console.error("[glossary] failed to render term:", item == null ? void 0 : item.term, itemErr);
           return "";
@@ -360,7 +364,7 @@
           console.error("[glossary] no #glossary-output or footer found; skipping render");
           return;
         }
-        renderTable(items, container);
+        renderTable(items, container, data.showTermOnly);
       } catch (err) {
         console.error("[glossary] renderGlossary failed:", err);
       }

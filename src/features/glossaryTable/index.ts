@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("[glossary] no #glossary-output or footer found; skipping render");
         return;
       }
-      renderTable(items, container);
+      renderTable(items, container, data.showTermOnly);
     } catch (err) {
       console.error("[glossary] renderGlossary failed:", err);
     }

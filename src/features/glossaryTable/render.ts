@@ -4,7 +4,11 @@ import { unescapeLatex } from "../../utils/latex";
 import { triggerMathJax } from "../../mathjax/typeset";
 import type { GlossaryItem } from "../../types";
 
-export function renderTable(terms: GlossaryItem[], container: HTMLElement): void {
+export function renderTable(
+  terms: GlossaryItem[],
+  container: HTMLElement,
+  showTermOnly: boolean,
+): void {
   try {
     if (!Array.isArray(terms)) {
       console.error("[glossary] render failed: terms is not an array", terms);
@@ -22,13 +26,18 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
                   `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`,
               )
               .join("") ?? "";
-          return (
-            '<p class="glossaryElement">' +
+          const termSpan =
             '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' +
             termAnchorId(item.term) +
             '">' +
             unescapeLatex(item.term) +
-            "</span>" +
+            "</span>";
+          if (showTermOnly) {
+            return '<p class="glossaryElement">' + termSpan + `<sup>${pagesLinks}</sup>` + "</p>";
+          }
+          return (
+            '<p class="glossaryElement">' +
+            termSpan +
             " | " +
             '<span class="glossaryDefinition">' +
             unescapeLatex(item.definition) +
