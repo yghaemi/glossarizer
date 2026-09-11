@@ -2,7 +2,11 @@ import { extractLibrary } from "../../utils/library";
 import { termAnchorId } from "../../utils/anchor";
 import { unescapeLatex } from "../../utils/latex";
 import { triggerMathJax } from "../../mathjax/typeset";
+import { attachTooltips } from "../../tooltip/attach";
+import { escapeHTML } from "../../utils/html";
 import type { GlossaryItem } from "../../types";
+
+const TABLE_TERM_SELECTOR = ".glossaryTerm[data-gt-item]";
 
 export function renderTable(
   terms: GlossaryItem[],
@@ -22,6 +26,8 @@ export function renderTable(
           const termSpan =
             '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' +
             termAnchorId(item.term) +
+            '" data-gt-item="' +
+            escapeHTML(JSON.stringify(item)) +
             '">' +
             unescapeLatex(item.term) +
             "</span>";
@@ -53,6 +59,8 @@ export function renderTable(
       .join("");
 
     container.innerHTML = '<div id="visibleGlossary">' + rows + "</div>";
+
+    attachTooltips(container, TABLE_TERM_SELECTOR);
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

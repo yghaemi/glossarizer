@@ -234,251 +234,6 @@
     ready.then(run).catch(run);
   }
 
-  // src/features/glossaryTable/render.ts
-  function renderTable(terms, container, showTermOnly) {
-    try {
-      if (!Array.isArray(terms)) {
-        console.error("[glossary] render failed: terms is not an array", terms);
-        return;
-      }
-      const library = extractLibrary(window.location.hostname);
-      const rows = terms.map((item) => {
-        var _a, _b;
-        try {
-          const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '">' + unescapeLatex(item.term) + "</span>";
-          if (showTermOnly) {
-            return '<p class="glossaryElement">' + termSpan + "</p>";
-          }
-          const pagesLinks = (_b = (_a = item.pages) == null ? void 0 : _a.map(
-            (page, index) => `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`
-          ).join("")) != null ? _b : "";
-          return '<p class="glossaryElement">' + termSpan + ' | <span class="glossaryDefinition">' + unescapeLatex(item.definition) + `<sup>${pagesLinks}</sup></span></p>`;
-        } catch (itemErr) {
-          console.error("[glossary] failed to render term:", item == null ? void 0 : item.term, itemErr);
-          return "";
-        }
-      }).join("");
-      container.innerHTML = '<div id="visibleGlossary">' + rows + "</div>";
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          try {
-            triggerMathJax();
-          } catch (mjErr) {
-            console.error("[glossary] MathJax typeset failed:", mjErr);
-          }
-        });
-      });
-    } catch (err) {
-      console.error("[glossary] renderTable failed:", err);
-    }
-  }
-
-  // src/features/glossaryTable/selectItems.ts
-  function selectGlossaryItems(data, pageId) {
-    switch (data.mode) {
-      case "PAGE":
-        return data.items.filter((item) => item.pages.includes(pageId));
-      case "BACKMATTER":
-        return pageId === data.glossaryID ? data.items : [];
-      case "CHAPTER": {
-        const group = data.groups.find((g) => g.targetPageId === pageId);
-        if (!group) return [];
-        return data.items.filter((item) => item.pages.some((page) => group.pageIds.includes(page)));
-      }
-      default:
-        return [];
-    }
-  }
-
-  // src/features/glossaryTable/target.ts
-  var OUTPUT_ID = "glossary-output";
-  var FOOTER_SELECTOR = ".elm-content-footer";
-  function resolveGlossaryContainer() {
-    const existing = document.getElementById(OUTPUT_ID);
-    if (existing) return existing;
-    const footer = document.querySelector(FOOTER_SELECTOR);
-    if (!footer) return null;
-    const container = document.createElement("div");
-    container.id = OUTPUT_ID;
-    footer.appendChild(container);
-    return container;
-  }
-
-  // src/features/glossaryTable/api.ts
-  function glossaryUrl(pageId, library) {
-    return `${API_HOST}/api/v1/commons/glossary/page/${pageId}/library/${library}`;
-  }
-  function fetchFreshness(url) {
-    return fetch(url, {
-      method: "GET",
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    }).then((response) => {
-      if (!response.ok) throw new Error("Request failed with status: " + response.status);
-      return response.json();
-    });
-  }
-  function fetchFullGlossary(url) {
-    console.log("Fetching full glossary from:", url);
-    return fetch(url, {
-      method: "POST",
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    }).then((response) => {
-      if (!response.ok) throw new Error("Request failed with status: " + response.status);
-      return response.json();
-    });
-  }
-
-  // src/features/glossaryTable/index.ts
-  function dispatchUpdated(coverID, library) {
-    document.dispatchEvent(
-      new CustomEvent("glossary:updated", { detail: { coverID, library } })
-    );
-  }
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(
-      'script[src*="libretextsGlossarizer"], link[href*="libretextsGlossarizer"]'
-    ).forEach((el) => {
-      var _a;
-      return (_a = el.parentNode) == null ? void 0 : _a.removeChild(el);
-    });
-    const style = document.createElement("style");
-    style.textContent = ".glossaryTerm{font-weight:bold;cursor:pointer;}.glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
-    document.head.appendChild(style);
-    const pageIdEl = document.getElementById("pageId");
-    if (!pageIdEl) {
-      console.error("[glossary] #pageId not found; skipping render");
-      return;
-    }
-    const pageId = pageIdEl.value;
-    const library = extractLibrary(window.location.hostname);
-    const url = glossaryUrl(pageId, library);
-    function renderGlossary(data) {
-      try {
-        const items = selectGlossaryItems(data, pageId);
-        if (!items.length) {
-          console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
-          return;
-        }
-        const container = resolveGlossaryContainer();
-        if (!container) {
-          console.error("[glossary] no #glossary-output or footer found; skipping render");
-          return;
-        }
-        renderTable(items, container, data.showTermOnly);
-      } catch (err) {
-        console.error("[glossary] renderGlossary failed:", err);
-      }
-    }
-    function fetchFull() {
-      return fetchFullGlossary(url).then((data) => {
-        if (!data || data.err === true || !data.data) {
-          console.error("[glossary] full fetch returned empty/error payload", data);
-          return;
-        }
-        setCache(String(data.data.coverID), data.data.library, data.data);
-        data.data.items.sort((a, b) => a.term.localeCompare(b.term));
-        renderGlossary(data.data);
-        dispatchUpdated(String(data.data.coverID), data.data.library);
-      }).catch((error) => console.error("[glossary] full fetch/render failed:", error));
-    }
-    console.log("Checking glossary freshness from:", url);
-    fetchFreshness(url).then((details) => {
-      const coverInput = document.getElementById("coverID");
-      if (coverInput) coverInput.value = details.coverID;
-      else console.warn("[glossary] #coverID input not found in DOM");
-      const cached = getCached(details.coverID, library);
-      if (cached && cached.lastUpdatedAt && new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)) {
-        console.log("Glossary loaded from cache");
-        cached.items.sort((a, b) => a.term.localeCompare(b.term));
-        renderGlossary(cached);
-        dispatchUpdated(details.coverID, library);
-      } else {
-        fetchFull();
-      }
-    }).catch((error) => console.error("[glossary] freshness check failed:", error));
-  });
-
-  // src/features/glossarize/cleanup.ts
-  function cleanupGlossaryTerms() {
-    document.querySelectorAll(".glossary-term").forEach((el) => {
-      var _a, _b, _c;
-      (_a = el._tippy) == null ? void 0 : _a.destroy();
-      (_c = el.parentNode) == null ? void 0 : _c.replaceChild(document.createTextNode((_b = el.textContent) != null ? _b : ""), el);
-    });
-  }
-
-  // src/features/glossarize/body.ts
-  var SKIP_TAGS = /* @__PURE__ */ new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "NOSCRIPT", "CODE", "PRE"]);
-  function defaultContentRoot() {
-    var _a;
-    return (_a = document.querySelector(".mt-content-container")) != null ? _a : document.body;
-  }
-  function glossarizeBody(termMap, root = defaultContentRoot()) {
-    const terms = Object.keys(termMap);
-    if (!terms.length) return;
-    const pattern = terms.sort((a, b) => b.length - a.length).map(escapeRegex).join("|");
-    const regex = new RegExp(`(?<![\\w])(${pattern})(?![\\w])`, "gi");
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode(node) {
-        var _a;
-        const el = node.parentElement;
-        if (!el) return NodeFilter.FILTER_REJECT;
-        if (SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
-        if (el.closest(".glossary-term")) return NodeFilter.FILTER_REJECT;
-        if (el.closest("#glossary-output")) return NodeFilter.FILTER_REJECT;
-        if (el.closest("mjx-container, .MathJax, .MathJax_Display")) return NodeFilter.FILTER_REJECT;
-        if (regex.test((_a = node.nodeValue) != null ? _a : "")) {
-          regex.lastIndex = 0;
-          return NodeFilter.FILTER_ACCEPT;
-        }
-        regex.lastIndex = 0;
-        return NodeFilter.FILTER_SKIP;
-      }
-    });
-    const nodes = [];
-    let n;
-    while (n = walker.nextNode()) nodes.push(n);
-    const anchored = {};
-    nodes.forEach((textNode) => {
-      var _a, _b;
-      const text = (_a = textNode.nodeValue) != null ? _a : "";
-      const latexRanges = getLatexRanges(text);
-      const frag = document.createDocumentFragment();
-      let lastIndex = 0;
-      let matched = false;
-      let match;
-      regex.lastIndex = 0;
-      while ((match = regex.exec(text)) !== null) {
-        if (inLatexRange(match.index, match[0].length, latexRanges)) continue;
-        matched = true;
-        if (match.index > lastIndex) {
-          frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
-        }
-        const termData = termMap[match[0].toLowerCase()];
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "glossary-term";
-        btn.textContent = match[0];
-        btn.setAttribute("aria-haspopup", "dialog");
-        btn.setAttribute("aria-expanded", "false");
-        btn.dataset.gtItem = JSON.stringify(termData);
-        const canonical = (termData.term || match[0]).toLowerCase();
-        const anchorId = termAnchorId(termData.term || match[0]);
-        if (!anchored[canonical] && !document.getElementById(anchorId)) {
-          btn.id = anchorId;
-          anchored[canonical] = true;
-        }
-        frag.appendChild(btn);
-        lastIndex = match.index + match[0].length;
-      }
-      if (!matched) return;
-      if (lastIndex < text.length) {
-        frag.appendChild(document.createTextNode(text.slice(lastIndex)));
-      }
-      (_b = textNode.parentNode) == null ? void 0 : _b.replaceChild(frag, textNode);
-    });
-  }
-
   // node_modules/.pnpm/@popperjs+core@2.11.8/node_modules/@popperjs/core/lib/enums.js
   var top = "top";
   var bottom = "bottom";
@@ -3366,8 +3121,8 @@
   }
 
   // src/tooltip/attach.ts
-  function attachTooltips(root = document) {
-    const targets = Array.from(root.querySelectorAll(".glossary-term")).filter(
+  function attachTooltips(root = document, selector = ".glossary-term") {
+    const targets = Array.from(root.querySelectorAll(selector)).filter(
       (el) => !el._tippy
     );
     if (!targets.length) return;
@@ -3465,6 +3220,253 @@
           (_b = instance.popper.querySelector(".gt-tooltip")) == null ? void 0 : _b.classList.add("gt-ready");
         });
       }
+    });
+  }
+
+  // src/features/glossaryTable/render.ts
+  var TABLE_TERM_SELECTOR = ".glossaryTerm[data-gt-item]";
+  function renderTable(terms, container, showTermOnly) {
+    try {
+      if (!Array.isArray(terms)) {
+        console.error("[glossary] render failed: terms is not an array", terms);
+        return;
+      }
+      const library = extractLibrary(window.location.hostname);
+      const rows = terms.map((item) => {
+        var _a, _b;
+        try {
+          const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '" data-gt-item="' + escapeHTML(JSON.stringify(item)) + '">' + unescapeLatex(item.term) + "</span>";
+          if (showTermOnly) {
+            return '<p class="glossaryElement">' + termSpan + "</p>";
+          }
+          const pagesLinks = (_b = (_a = item.pages) == null ? void 0 : _a.map(
+            (page, index) => `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`
+          ).join("")) != null ? _b : "";
+          return '<p class="glossaryElement">' + termSpan + ' | <span class="glossaryDefinition">' + unescapeLatex(item.definition) + `<sup>${pagesLinks}</sup></span></p>`;
+        } catch (itemErr) {
+          console.error("[glossary] failed to render term:", item == null ? void 0 : item.term, itemErr);
+          return "";
+        }
+      }).join("");
+      container.innerHTML = '<div id="visibleGlossary">' + rows + "</div>";
+      attachTooltips(container, TABLE_TERM_SELECTOR);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            triggerMathJax();
+          } catch (mjErr) {
+            console.error("[glossary] MathJax typeset failed:", mjErr);
+          }
+        });
+      });
+    } catch (err) {
+      console.error("[glossary] renderTable failed:", err);
+    }
+  }
+
+  // src/features/glossaryTable/selectItems.ts
+  function selectGlossaryItems(data, pageId) {
+    switch (data.mode) {
+      case "PAGE":
+        return data.items.filter((item) => item.pages.includes(pageId));
+      case "BACKMATTER":
+        return pageId === data.glossaryID ? data.items : [];
+      case "CHAPTER": {
+        const group = data.groups.find((g) => g.targetPageId === pageId);
+        if (!group) return [];
+        return data.items.filter((item) => item.pages.some((page) => group.pageIds.includes(page)));
+      }
+      default:
+        return [];
+    }
+  }
+
+  // src/features/glossaryTable/target.ts
+  var OUTPUT_ID = "glossary-output";
+  var FOOTER_SELECTOR = ".elm-content-footer";
+  function resolveGlossaryContainer() {
+    const existing = document.getElementById(OUTPUT_ID);
+    if (existing) return existing;
+    const footer = document.querySelector(FOOTER_SELECTOR);
+    if (!footer) return null;
+    const container = document.createElement("div");
+    container.id = OUTPUT_ID;
+    footer.appendChild(container);
+    return container;
+  }
+
+  // src/features/glossaryTable/api.ts
+  function glossaryUrl(pageId, library) {
+    return `${API_HOST}/api/v1/commons/glossary/page/${pageId}/library/${library}`;
+  }
+  function fetchFreshness(url) {
+    return fetch(url, {
+      method: "GET",
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    }).then((response) => {
+      if (!response.ok) throw new Error("Request failed with status: " + response.status);
+      return response.json();
+    });
+  }
+  function fetchFullGlossary(url) {
+    console.log("Fetching full glossary from:", url);
+    return fetch(url, {
+      method: "POST",
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    }).then((response) => {
+      if (!response.ok) throw new Error("Request failed with status: " + response.status);
+      return response.json();
+    });
+  }
+
+  // src/features/glossaryTable/index.ts
+  function dispatchUpdated(coverID, library) {
+    document.dispatchEvent(
+      new CustomEvent("glossary:updated", { detail: { coverID, library } })
+    );
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(
+      'script[src*="libretextsGlossarizer"], link[href*="libretextsGlossarizer"]'
+    ).forEach((el) => {
+      var _a;
+      return (_a = el.parentNode) == null ? void 0 : _a.removeChild(el);
+    });
+    const style = document.createElement("style");
+    style.textContent = ".glossaryTerm{font-weight:bold;cursor:pointer;}.glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
+    document.head.appendChild(style);
+    const pageIdEl = document.getElementById("pageId");
+    if (!pageIdEl) {
+      console.error("[glossary] #pageId not found; skipping render");
+      return;
+    }
+    const pageId = pageIdEl.value;
+    const library = extractLibrary(window.location.hostname);
+    const url = glossaryUrl(pageId, library);
+    function renderGlossary(data) {
+      try {
+        const items = selectGlossaryItems(data, pageId);
+        if (!items.length) {
+          console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
+          return;
+        }
+        const container = resolveGlossaryContainer();
+        if (!container) {
+          console.error("[glossary] no #glossary-output or footer found; skipping render");
+          return;
+        }
+        renderTable(items, container, data.showTermOnly);
+      } catch (err) {
+        console.error("[glossary] renderGlossary failed:", err);
+      }
+    }
+    function fetchFull() {
+      return fetchFullGlossary(url).then((data) => {
+        if (!data || data.err === true || !data.data) {
+          console.error("[glossary] full fetch returned empty/error payload", data);
+          return;
+        }
+        setCache(String(data.data.coverID), data.data.library, data.data);
+        data.data.items.sort((a, b) => a.term.localeCompare(b.term));
+        renderGlossary(data.data);
+        dispatchUpdated(String(data.data.coverID), data.data.library);
+      }).catch((error) => console.error("[glossary] full fetch/render failed:", error));
+    }
+    console.log("Checking glossary freshness from:", url);
+    fetchFreshness(url).then((details) => {
+      const coverInput = document.getElementById("coverID");
+      if (coverInput) coverInput.value = details.coverID;
+      else console.warn("[glossary] #coverID input not found in DOM");
+      const cached = getCached(details.coverID, library);
+      if (cached && cached.lastUpdatedAt && new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)) {
+        console.log("Glossary loaded from cache");
+        cached.items.sort((a, b) => a.term.localeCompare(b.term));
+        renderGlossary(cached);
+        dispatchUpdated(details.coverID, library);
+      } else {
+        fetchFull();
+      }
+    }).catch((error) => console.error("[glossary] freshness check failed:", error));
+  });
+
+  // src/features/glossarize/cleanup.ts
+  function cleanupGlossaryTerms() {
+    document.querySelectorAll(".glossary-term").forEach((el) => {
+      var _a, _b, _c;
+      (_a = el._tippy) == null ? void 0 : _a.destroy();
+      (_c = el.parentNode) == null ? void 0 : _c.replaceChild(document.createTextNode((_b = el.textContent) != null ? _b : ""), el);
+    });
+  }
+
+  // src/features/glossarize/body.ts
+  var SKIP_TAGS = /* @__PURE__ */ new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "NOSCRIPT", "CODE", "PRE"]);
+  function defaultContentRoot() {
+    var _a;
+    return (_a = document.querySelector(".mt-content-container")) != null ? _a : document.body;
+  }
+  function glossarizeBody(termMap, root = defaultContentRoot()) {
+    const terms = Object.keys(termMap);
+    if (!terms.length) return;
+    const pattern = terms.sort((a, b) => b.length - a.length).map(escapeRegex).join("|");
+    const regex = new RegExp(`(?<![\\w])(${pattern})(?![\\w])`, "gi");
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        var _a;
+        const el = node.parentElement;
+        if (!el) return NodeFilter.FILTER_REJECT;
+        if (SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
+        if (el.closest(".glossary-term")) return NodeFilter.FILTER_REJECT;
+        if (el.closest("#glossary-output")) return NodeFilter.FILTER_REJECT;
+        if (el.closest("mjx-container, .MathJax, .MathJax_Display")) return NodeFilter.FILTER_REJECT;
+        if (regex.test((_a = node.nodeValue) != null ? _a : "")) {
+          regex.lastIndex = 0;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+        regex.lastIndex = 0;
+        return NodeFilter.FILTER_SKIP;
+      }
+    });
+    const nodes = [];
+    let n;
+    while (n = walker.nextNode()) nodes.push(n);
+    const anchored = {};
+    nodes.forEach((textNode) => {
+      var _a, _b;
+      const text = (_a = textNode.nodeValue) != null ? _a : "";
+      const latexRanges = getLatexRanges(text);
+      const frag = document.createDocumentFragment();
+      let lastIndex = 0;
+      let matched = false;
+      let match;
+      regex.lastIndex = 0;
+      while ((match = regex.exec(text)) !== null) {
+        if (inLatexRange(match.index, match[0].length, latexRanges)) continue;
+        matched = true;
+        if (match.index > lastIndex) {
+          frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+        }
+        const termData = termMap[match[0].toLowerCase()];
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "glossary-term";
+        btn.textContent = match[0];
+        btn.setAttribute("aria-haspopup", "dialog");
+        btn.setAttribute("aria-expanded", "false");
+        btn.dataset.gtItem = JSON.stringify(termData);
+        const canonical = (termData.term || match[0]).toLowerCase();
+        const anchorId = termAnchorId(termData.term || match[0]);
+        if (!anchored[canonical] && !document.getElementById(anchorId)) {
+          btn.id = anchorId;
+          anchored[canonical] = true;
+        }
+        frag.appendChild(btn);
+        lastIndex = match.index + match[0].length;
+      }
+      if (!matched) return;
+      if (lastIndex < text.length) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+      (_b = textNode.parentNode) == null ? void 0 : _b.replaceChild(frag, textNode);
     });
   }
 

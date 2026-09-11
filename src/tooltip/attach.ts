@@ -17,8 +17,8 @@ interface ElementWithTippy extends HTMLElement {
 // a Tippy instance, so calling this again after an incremental glossarize
 // pass (see features/glossarize/watch.ts) doesn't stack duplicate tooltips
 // on terms that were already wrapped.
-export function attachTooltips(root: ParentNode = document): void {
-  const targets = Array.from(root.querySelectorAll<ElementWithTippy>(".glossary-term")).filter(
+export function attachTooltips(root: ParentNode = document, selector = ".glossary-term"): void {
+  const targets = Array.from(root.querySelectorAll<ElementWithTippy>(selector)).filter(
     (el) => !el._tippy,
   );
   if (!targets.length) return;
