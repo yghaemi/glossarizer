@@ -3296,15 +3296,15 @@
 
   // src/features/glossaryTable/target.ts
   var OUTPUT_ID = "glossary-output";
-  var CONTENT_SELECTOR = ".mt-content-container";
+  var FOOTER_SELECTOR = ".elm-content-footer";
   function resolveGlossaryContainer() {
     const existing = resolveOwnElement(`#${OUTPUT_ID}`);
     if (existing) return existing;
-    const footer = resolveOwnElement(CONTENT_SELECTOR);
-    if (!footer) return null;
+    const footer = resolveOwnElement(FOOTER_SELECTOR);
+    if (!(footer == null ? void 0 : footer.parentNode)) return null;
     const container = document.createElement("div");
     container.id = OUTPUT_ID;
-    footer.appendChild(container);
+    footer.parentNode.insertBefore(container, footer);
     return container;
   }
 
