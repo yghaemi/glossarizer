@@ -3242,7 +3242,7 @@
         console.error("[glossary] render failed: terms is not an array", terms);
         return;
       }
-      const termOnly = container.dataset.display === "termonly";
+      const termOnly = container.dataset.termonly === "true";
       const library = extractLibrary(window.location.hostname);
       const rows = terms.map((item) => {
         var _a, _b;
