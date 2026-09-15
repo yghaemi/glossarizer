@@ -3327,13 +3327,15 @@
       new CustomEvent("glossary:updated", { detail: { coverID, library } })
     );
   }
-  document.addEventListener("DOMContentLoaded", () => {
+  function removeLegacyGlossarizer() {
     document.querySelectorAll(
       'script[src*="libretextsGlossarizer"], link[href*="libretextsGlossarizer"]'
     ).forEach((el) => {
       var _a;
       return (_a = el.parentNode) == null ? void 0 : _a.removeChild(el);
     });
+  }
+  document.addEventListener("DOMContentLoaded", () => {
     const style = document.createElement("style");
     style.textContent = ".glossaryTerm{font-weight:bold;cursor:pointer;}.glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
     document.head.appendChild(style);
@@ -3368,6 +3370,7 @@
           console.error("[glossary] full fetch returned empty/error payload", data);
           return;
         }
+        removeLegacyGlossarizer();
         setCache(String(data.data.coverID), data.data.library, data.data);
         data.data.items.sort((a, b) => a.term.localeCompare(b.term));
         renderGlossary(data.data);
@@ -3382,6 +3385,7 @@
       const cached = getCached(details.coverID, library);
       if (cached && cached.lastUpdatedAt && new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)) {
         console.log("Glossary loaded from cache");
+        removeLegacyGlossarizer();
         cached.items.sort((a, b) => a.term.localeCompare(b.term));
         renderGlossary(cached);
         dispatchUpdated(details.coverID, library);

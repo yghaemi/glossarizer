@@ -13,15 +13,19 @@ function dispatchUpdated(coverID: string, library: string): void {
   );
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Remove any platform-injected legacy Glossarizer script/stylesheet so they
-  // don't conflict with the local bundled version.
+// Remove any platform-injected legacy Glossarizer script/stylesheet so they
+// don't conflict with the local bundled version. Only called once we actually
+// have new glossary data to render — if the API call errors out, the legacy
+// script is left in place so it can still serve the page.
+function removeLegacyGlossarizer(): void {
   document
     .querySelectorAll(
       'script[src*="libretextsGlossarizer"], link[href*="libretextsGlossarizer"]',
     )
     .forEach((el) => el.parentNode?.removeChild(el));
+}
 
+document.addEventListener("DOMContentLoaded", () => {
   const style = document.createElement("style");
   style.textContent =
     ".glossaryTerm{font-weight:bold;cursor:pointer;}" +
@@ -69,6 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
           // if (out) out.textContent = "No glossary terms found.";
           return;
         }
+        removeLegacyGlossarizer();
         setCache(String(data.data.coverID), data.data.library, data.data);
         data.data.items.sort((a, b) => a.term.localeCompare(b.term));
         renderGlossary(data.data);
@@ -91,6 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
         new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)
       ) {
         console.log("Glossary loaded from cache");
+        removeLegacyGlossarizer();
         cached.items.sort((a, b) => a.term.localeCompare(b.term));
         renderGlossary(cached);
         dispatchUpdated(details.coverID, library);
