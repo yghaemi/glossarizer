@@ -3231,11 +3231,15 @@
         console.error("[glossary] render failed: terms is not an array", terms);
         return;
       }
+      const termOnly = container.dataset.display === "termOnly";
       const library = extractLibrary(window.location.hostname);
       const rows = terms.map((item) => {
         var _a, _b;
         try {
           const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '" data-gt-item="' + escapeHTML(JSON.stringify(item)) + '">' + unescapeLatex(item.term) + "</span>";
+          if (termOnly) {
+            return '<p class="glossaryElement">' + termSpan + "</p>";
+          }
           const pagesLinks = (_b = (_a = item.pages) == null ? void 0 : _a.map(
             (page, index) => `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`
           ).join("")) != null ? _b : "";

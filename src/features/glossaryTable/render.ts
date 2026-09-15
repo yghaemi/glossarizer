@@ -15,6 +15,7 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
       return;
     }
 
+    const termOnly = container.dataset.display === "termOnly";
     const library = extractLibrary(window.location.hostname);
     const rows = terms
       .map((item) => {
@@ -27,6 +28,9 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
             '">' +
             unescapeLatex(item.term) +
             "</span>";
+          if (termOnly) {
+            return '<p class="glossaryElement">' + termSpan + "</p>";
+          }
           const pagesLinks =
             item.pages
               ?.map(
