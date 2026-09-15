@@ -5,7 +5,7 @@ import { resolveOwnElement } from "../../utils/scope";
 import { renderTable } from "./render";
 import { selectGlossaryItems } from "./selectItems";
 import { resolveGlossaryContainer } from "./target";
-import { glossaryUrl, fetchFreshness, fetchFullGlossary } from "./api";
+import { glossaryUrl, fetchFreshness, fetchFullGlossary, fetchCurrentPageId } from "./api";
 import type { GlossaryData } from "../../types";
 
 function dispatchUpdated(coverID: string, library: string): void {
@@ -38,76 +38,94 @@ document.addEventListener("DOMContentLoaded", () => {
   document.head.appendChild(style);
 
   const pageIdEl = resolveOwnElement<HTMLInputElement>("#pageId");
-  if (!pageIdEl) {
-    console.error("[glossary] #pageId not found; skipping render");
-    return;
-  }
-
-  const pageId = pageIdEl.value;
   const library = extractLibrary(window.location.hostname);
-  const url = glossaryUrl(pageId, library);
 
-  function renderGlossary(data: GlossaryData): void {
-    try {
-      const items = selectGlossaryItems(data, pageId);
-
-      if (!items.length) {
-        console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
-        // const existingOut = document.getElementById("glossary-output");
-        // if (existingOut) existingOut.textContent = "No glossary terms found.";
+  // Resolve the real current-page id via the Deki API, keyed off
+  // window.location rather than the #pageId hidden input — transclusion can
+  // duplicate that input's markup, making its value untrustworthy (see
+  // utils/scope.ts). Fall back to the hidden input if the lookup fails so a
+  // Deki API hiccup doesn't take the whole glossary down.
+  fetchCurrentPageId(library)
+    .catch((error) => {
+      console.warn(
+        "[glossary] Deki pageId lookup failed, falling back to #pageId input:",
+        error,
+      );
+      return pageIdEl?.value;
+    })
+    .then((pageId) => {
+      if (!pageId) {
+        console.error("[glossary] no pageId available (Deki lookup and #pageId both failed); skipping render");
         return;
       }
+      run(pageId);
+    });
 
-      const container = resolveGlossaryContainer();
-      if (!container) {
-        console.error("[glossary] no #glossary-output or footer found; skipping render");
-        return;
-      }
-      renderTable(items, container);
-    } catch (err) {
-      console.error("[glossary] renderGlossary failed:", err);
-    }
-  }
+  function run(pageId: string): void {
+    const url = glossaryUrl(pageId, library);
 
-  function fetchFull(): Promise<void> {
-    return fetchFullGlossary(url)
-      .then((data) => {
-        if (!data || data.err === true || !data.data) {
-          console.error("[glossary] full fetch returned empty/error payload", data);
-          // const out = document.getElementById("glossary-output");
-          // if (out) out.textContent = "No glossary terms found.";
+    function renderGlossary(data: GlossaryData): void {
+      try {
+        const items = selectGlossaryItems(data, pageId);
+
+        if (!items.length) {
+          console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
+          // const existingOut = document.getElementById("glossary-output");
+          // if (existingOut) existingOut.textContent = "No glossary terms found.";
           return;
         }
-        removeLegacyGlossarizer();
-        setCache(String(data.data.coverID), data.data.library, data.data);
-        data.data.items.sort((a, b) => a.term.localeCompare(b.term));
-        renderGlossary(data.data);
-        dispatchUpdated(String(data.data.coverID), data.data.library);
-      })
-      .catch((error) => console.error("[glossary] full fetch/render failed:", error));
-  }
 
-  console.log("Checking glossary freshness from:", url);
-  fetchFreshness(url)
-    .then((details) => {
-      const coverInput = resolveOwnElement<HTMLInputElement>("#coverID");
-      if (coverInput) coverInput.value = details.coverID;
-      else console.warn("[glossary] #coverID input not found in DOM");
-
-      const cached = getCached<GlossaryData>(details.coverID, library);
-      if (
-        cached &&
-        cached.lastUpdatedAt &&
-        new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)
-      ) {
-        console.log("Glossary loaded from cache");
-        removeLegacyGlossarizer();
-        cached.items.sort((a, b) => a.term.localeCompare(b.term));
-        renderGlossary(cached);
-        dispatchUpdated(details.coverID, library);
-      } else {
-        fetchFull();
+        const container = resolveGlossaryContainer();
+        if (!container) {
+          console.error("[glossary] no #glossary-output or footer found; skipping render");
+          return;
+        }
+        renderTable(items, container);
+      } catch (err) {
+        console.error("[glossary] renderGlossary failed:", err);
       }
-    })
-    .catch((error) => console.error("[glossary] freshness check failed:", error));
+    }
+
+    function fetchFull(): Promise<void> {
+      return fetchFullGlossary(url)
+        .then((data) => {
+          if (!data || data.err === true || !data.data) {
+            console.error("[glossary] full fetch returned empty/error payload", data);
+            // const out = document.getElementById("glossary-output");
+            // if (out) out.textContent = "No glossary terms found.";
+            return;
+          }
+          removeLegacyGlossarizer();
+          setCache(String(data.data.coverID), data.data.library, data.data);
+          data.data.items.sort((a, b) => a.term.localeCompare(b.term));
+          renderGlossary(data.data);
+          dispatchUpdated(String(data.data.coverID), data.data.library);
+        })
+        .catch((error) => console.error("[glossary] full fetch/render failed:", error));
+    }
+
+    console.log("Checking glossary freshness from:", url);
+    fetchFreshness(url)
+      .then((details) => {
+        const coverInput = resolveOwnElement<HTMLInputElement>("#coverID");
+        if (coverInput) coverInput.value = details.coverID;
+        else console.warn("[glossary] #coverID input not found in DOM");
+
+        const cached = getCached<GlossaryData>(details.coverID, library);
+        if (
+          cached &&
+          cached.lastUpdatedAt &&
+          new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)
+        ) {
+          console.log("Glossary loaded from cache");
+          removeLegacyGlossarizer();
+          cached.items.sort((a, b) => a.term.localeCompare(b.term));
+          renderGlossary(cached);
+          dispatchUpdated(details.coverID, library);
+        } else {
+          fetchFull();
+        }
+      })
+      .catch((error) => console.error("[glossary] freshness check failed:", error));
+  }
 });
