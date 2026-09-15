@@ -26,6 +26,10 @@ function removeLegacyGlossarizer(): void {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Clear out any stale glossary table (e.g. left over from a prior render)
+  // before this run renders its own.
+  document.getElementById("visibleGlossary")?.remove();
+
   const style = document.createElement("style");
   style.textContent =
     ".glossaryTerm{font-weight:bold;cursor:pointer;}" +

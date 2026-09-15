@@ -3336,6 +3336,8 @@
     });
   }
   document.addEventListener("DOMContentLoaded", () => {
+    var _a;
+    (_a = document.getElementById("visibleGlossary")) == null ? void 0 : _a.remove();
     const style = document.createElement("style");
     style.textContent = ".glossaryTerm{font-weight:bold;cursor:pointer;}.glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
     document.head.appendChild(style);
