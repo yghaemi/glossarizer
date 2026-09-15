@@ -3296,11 +3296,11 @@
 
   // src/features/glossaryTable/target.ts
   var OUTPUT_ID = "glossary-output";
-  var FOOTER_SELECTOR = ".elm-content-footer";
+  var CONTENT_SELECTOR = ".mt-content-container";
   function resolveGlossaryContainer() {
     const existing = resolveOwnElement(`#${OUTPUT_ID}`);
     if (existing) return existing;
-    const footer = resolveOwnElement(FOOTER_SELECTOR);
+    const footer = resolveOwnElement(CONTENT_SELECTOR);
     if (!footer) return null;
     const container = document.createElement("div");
     container.id = OUTPUT_ID;

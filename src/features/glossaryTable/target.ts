@@ -1,7 +1,7 @@
 import { resolveOwnElement } from "../../utils/scope";
 
 const OUTPUT_ID = "glossary-output";
-const FOOTER_SELECTOR = ".elm-content-footer";
+const CONTENT_SELECTOR = ".mt-content-container";
 
 // Resolve the element the glossary should render into: a template-provided
 // #glossary-output is preferred, falling back to a container appended as the
@@ -16,7 +16,7 @@ export function resolveGlossaryContainer(): HTMLElement | null {
   const existing = resolveOwnElement<HTMLElement>(`#${OUTPUT_ID}`);
   if (existing) return existing;
 
-  const footer = resolveOwnElement<HTMLElement>(FOOTER_SELECTOR);
+  const footer = resolveOwnElement<HTMLElement>(CONTENT_SELECTOR);
   if (!footer) return null;
 
   const container = document.createElement("div");
