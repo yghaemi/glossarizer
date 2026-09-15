@@ -8,11 +8,7 @@ import type { GlossaryItem } from "../../types";
 
 const TABLE_TERM_SELECTOR = ".glossaryTerm[data-gt-item]";
 
-export function renderTable(
-  terms: GlossaryItem[],
-  container: HTMLElement,
-  showTermOnly: boolean,
-): void {
+export function renderTable(terms: GlossaryItem[], container: HTMLElement): void {
   try {
     if (!Array.isArray(terms)) {
       console.error("[glossary] render failed: terms is not an array", terms);
@@ -31,9 +27,6 @@ export function renderTable(
             '">' +
             unescapeLatex(item.term) +
             "</span>";
-          if (showTermOnly) {
-            return '<p class="glossaryElement">' + termSpan + "</p>";
-          }
           const pagesLinks =
             item.pages
               ?.map(

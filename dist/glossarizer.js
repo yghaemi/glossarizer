@@ -3225,7 +3225,7 @@
 
   // src/features/glossaryTable/render.ts
   var TABLE_TERM_SELECTOR = ".glossaryTerm[data-gt-item]";
-  function renderTable(terms, container, showTermOnly) {
+  function renderTable(terms, container) {
     try {
       if (!Array.isArray(terms)) {
         console.error("[glossary] render failed: terms is not an array", terms);
@@ -3236,9 +3236,6 @@
         var _a, _b;
         try {
           const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '" data-gt-item="' + escapeHTML(JSON.stringify(item)) + '">' + unescapeLatex(item.term) + "</span>";
-          if (showTermOnly) {
-            return '<p class="glossaryElement">' + termSpan + "</p>";
-          }
           const pagesLinks = (_b = (_a = item.pages) == null ? void 0 : _a.map(
             (page, index) => `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`
           ).join("")) != null ? _b : "";
@@ -3266,11 +3263,12 @@
 
   // src/features/glossaryTable/selectItems.ts
   function selectGlossaryItems(data, pageId) {
+    if (pageId === data.glossaryID) return data.items;
     switch (data.mode) {
       case "PAGE":
         return data.items.filter((item) => item.pages.includes(pageId));
       case "BACKMATTER":
-        return pageId === data.glossaryID ? data.items : [];
+        return [];
       case "CHAPTER": {
         const group = data.groups.find((g) => g.targetPageId === pageId);
         if (!group) return [];
@@ -3355,7 +3353,7 @@
           console.error("[glossary] no #glossary-output or footer found; skipping render");
           return;
         }
-        renderTable(items, container, data.showTermOnly);
+        renderTable(items, container);
       } catch (err) {
         console.error("[glossary] renderGlossary failed:", err);
       }
