@@ -1,8 +1,6 @@
-export function triggerMathJax(): void {
+export function triggerMathJax(target: Element): void {
   function typeset() {
-    const el = document.getElementById("glossary-output");
-    if (!el) return;
-    window.MathJax.typesetPromise([el])
+    window.MathJax.typesetPromise([target])
       .then(() => console.log("MathJax typeset done"))
       .catch((err: unknown) => console.error("MathJax typeset error:", err));
   }

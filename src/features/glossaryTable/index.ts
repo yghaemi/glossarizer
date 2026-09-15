@@ -1,6 +1,7 @@
 import "./scroll"; // registers document-level click/keydown listeners for scroll-to-term
 import { extractLibrary } from "../../utils/library";
 import { getCached, setCache } from "../../utils/cache";
+import { resolveOwnElement } from "../../utils/scope";
 import { renderTable } from "./render";
 import { selectGlossaryItems } from "./selectItems";
 import { resolveGlossaryContainer } from "./target";
@@ -28,7 +29,7 @@ function removeLegacyGlossarizer(): void {
 document.addEventListener("DOMContentLoaded", () => {
   // Clear out any stale glossary table (e.g. left over from a prior render)
   // before this run renders its own.
-  document.getElementById("visibleGlossary")?.remove();
+  resolveOwnElement("#visibleGlossary")?.remove();
 
   const style = document.createElement("style");
   style.textContent =
@@ -36,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ".glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
   document.head.appendChild(style);
 
-  const pageIdEl = document.getElementById("pageId") as HTMLInputElement | null;
+  const pageIdEl = resolveOwnElement<HTMLInputElement>("#pageId");
   if (!pageIdEl) {
     console.error("[glossary] #pageId not found; skipping render");
     return;
@@ -89,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log("Checking glossary freshness from:", url);
   fetchFreshness(url)
     .then((details) => {
-      const coverInput = document.getElementById("coverID") as HTMLInputElement | null;
+      const coverInput = resolveOwnElement<HTMLInputElement>("#coverID");
       if (coverInput) coverInput.value = details.coverID;
       else console.warn("[glossary] #coverID input not found in DOM");
 

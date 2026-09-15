@@ -1,9 +1,10 @@
+import { resolveOwnElement } from "../../utils/scope";
 import { cleanupGlossaryTerms } from "./cleanup";
 import { runGlossarize } from "./run";
 import { watchForContentChanges } from "./watch";
 
 function tryRunFromCache(): void {
-  const el = document.getElementById("coverID") as HTMLInputElement | null;
+  const el = resolveOwnElement<HTMLInputElement>("#coverID");
   if (el?.value) runGlossarize(el.value);
 }
 

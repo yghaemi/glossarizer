@@ -119,6 +119,19 @@
     }
   }
 
+  // src/utils/scope.ts
+  var ownScript = document.currentScript;
+  function resolveOwnElement(selector) {
+    var _a;
+    let scope = (_a = ownScript == null ? void 0 : ownScript.parentElement) != null ? _a : null;
+    while (scope) {
+      const found = scope.querySelector(selector);
+      if (found) return found;
+      scope = scope.parentElement;
+    }
+    return document.querySelector(selector);
+  }
+
   // src/utils/anchor.ts
   function termAnchorId(term) {
     return "gt-anchor-" + String(term).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -157,11 +170,9 @@
   }
 
   // src/mathjax/typeset.ts
-  function triggerMathJax() {
+  function triggerMathJax(target) {
     function typeset() {
-      const el = document.getElementById("glossary-output");
-      if (!el) return;
-      window.MathJax.typesetPromise([el]).then(() => console.log("MathJax typeset done")).catch((err) => console.error("MathJax typeset error:", err));
+      window.MathJax.typesetPromise([target]).then(() => console.log("MathJax typeset done")).catch((err) => console.error("MathJax typeset error:", err));
     }
     function runTypeset() {
       const mj = window.MathJax;
@@ -3254,7 +3265,7 @@
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           try {
-            triggerMathJax();
+            triggerMathJax(container);
           } catch (mjErr) {
             console.error("[glossary] MathJax typeset failed:", mjErr);
           }
@@ -3287,9 +3298,9 @@
   var OUTPUT_ID = "glossary-output";
   var FOOTER_SELECTOR = ".elm-content-footer";
   function resolveGlossaryContainer() {
-    const existing = document.getElementById(OUTPUT_ID);
+    const existing = resolveOwnElement(`#${OUTPUT_ID}`);
     if (existing) return existing;
-    const footer = document.querySelector(FOOTER_SELECTOR);
+    const footer = resolveOwnElement(FOOTER_SELECTOR);
     if (!footer) return null;
     const container = document.createElement("div");
     container.id = OUTPUT_ID;
@@ -3337,11 +3348,11 @@
   }
   document.addEventListener("DOMContentLoaded", () => {
     var _a;
-    (_a = document.getElementById("visibleGlossary")) == null ? void 0 : _a.remove();
+    (_a = resolveOwnElement("#visibleGlossary")) == null ? void 0 : _a.remove();
     const style = document.createElement("style");
     style.textContent = ".glossaryTerm{font-weight:bold;cursor:pointer;}.glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
     document.head.appendChild(style);
-    const pageIdEl = document.getElementById("pageId");
+    const pageIdEl = resolveOwnElement("#pageId");
     if (!pageIdEl) {
       console.error("[glossary] #pageId not found; skipping render");
       return;
@@ -3381,7 +3392,7 @@
     }
     console.log("Checking glossary freshness from:", url);
     fetchFreshness(url).then((details) => {
-      const coverInput = document.getElementById("coverID");
+      const coverInput = resolveOwnElement("#coverID");
       if (coverInput) coverInput.value = details.coverID;
       else console.warn("[glossary] #coverID input not found in DOM");
       const cached = getCached(details.coverID, library);
@@ -3485,7 +3496,7 @@
   }
   function runGlossarize(coverID) {
     var _a;
-    const pageIdEl = document.getElementById("pageId");
+    const pageIdEl = resolveOwnElement("#pageId");
     if (!pageIdEl) return;
     const library = extractLibrary(window.location.hostname);
     const key = cacheKey(coverID, library);
@@ -3562,7 +3573,7 @@
 
   // src/features/glossarize/index.ts
   function tryRunFromCache() {
-    const el = document.getElementById("coverID");
+    const el = resolveOwnElement("#coverID");
     if (el == null ? void 0 : el.value) runGlossarize(el.value);
   }
   function init() {

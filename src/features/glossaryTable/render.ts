@@ -62,7 +62,7 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         try {
-          triggerMathJax();
+          triggerMathJax(container);
         } catch (mjErr) {
           console.error("[glossary] MathJax typeset failed:", mjErr);
         }
