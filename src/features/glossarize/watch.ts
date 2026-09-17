@@ -17,13 +17,22 @@ function nodeRoot(node: Node, contentRoot: Node): Element | null {
   return el;
 }
 
+export interface WatchHandle {
+  // Stop observing without discarding anything already queued — used to
+  // shield the watcher from a caller's own large DOM edits (e.g. the
+  // document-wide cleanup+reglossarize pass run on "glossary:updated") so
+  // that pass's mutations aren't captured as "new content" and re-scanned.
+  pause(): void;
+  resume(): void;
+}
+
 // Glossarizing only runs once up front (on initial load / "glossary:updated").
 // Content added afterward — lazy-loaded sections, widgets that render late,
 // anything injected by other scripts on the page — would otherwise never get
 // scanned. This watches the content root for such additions and glossarizes
 // just the new nodes, leaving already-wrapped terms and any open tooltips
 // elsewhere on the page untouched.
-export function watchForContentChanges(): void {
+export function watchForContentChanges(): WatchHandle {
   const contentRoot = document.querySelector(".mt-content-container") ?? document.body;
 
   const pendingRoots = new Set<Element>();
@@ -32,9 +41,15 @@ export function watchForContentChanges(): void {
   function flush(): void {
     timer = null;
     const termMap = getActiveTermMap();
+    if (!termMap) {
+      // Initial glossary fetch hasn't populated the term map yet — don't
+      // drop what's queued, just try again shortly instead.
+      timer = setTimeout(flush, DEBOUNCE_MS);
+      return;
+    }
     const roots = Array.from(pendingRoots);
     pendingRoots.clear();
-    if (!termMap || !roots.length) return;
+    if (!roots.length) return;
 
     // Pause observing while we make our own edits, so wrapping the new terms
     // doesn't immediately re-trigger this same callback.
@@ -63,4 +78,18 @@ export function watchForContentChanges(): void {
   });
 
   observer.observe(contentRoot, { childList: true, subtree: true, characterData: true });
+
+  return {
+    pause(): void {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      observer.disconnect();
+    },
+    resume(): void {
+      observer.takeRecords();
+      observer.observe(contentRoot, { childList: true, subtree: true, characterData: true });
+    },
+  };
 }

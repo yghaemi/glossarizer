@@ -9,7 +9,7 @@ const GT_STYLES = [
   ".gt-tooltip{width:380px;line-height:1;color:#000;font-size:1.1rem;border-radius:0.5rem;}",
   "@media(max-width:380px){.gt-tooltip{width:95vw;}}",
   ".gt-img-wrap{margin-bottom:8px;display:flex;justify-content:center;flex-direction:column;}",
-  ".gt-caption{margin:4px 0 0;font-size:1.1rem!important,font-weight:normal!important;color:#4f4545;text-align:center;}",
+  ".gt-caption{margin:4px 0 0;font-size:1.1rem!important;font-weight:normal!important;color:#4f4545;text-align:center;}",
   ".gt-definition{margin:0 0 6px; font-size:1.1rem!important; line-height:1.5!important; font-weight:normal!important;}",
   ".gt-source{margin:4px 0;font-size:1.1rem;color:#aaa;}",
   ".gt-link{display:inline-block;margin-top:4px;font-size:1.1rem;color:#4a90e2;text-decoration:none;}",

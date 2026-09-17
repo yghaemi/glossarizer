@@ -2987,6 +2987,9 @@
   function escapeHTML(str) {
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+  function escapeJsString(str) {
+    return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+  }
 
   // src/tooltip/template.ts
   var uidCounter = 0;
@@ -3042,7 +3045,7 @@
       const imgAttribution = imgAttrParts.length ? "(" + imgAttrParts.join("; ") + ")" : "";
       const imgCaption = [captionBase, imgAttribution].filter(Boolean).join(" ");
       imgParts.push(
-        `<div class="gt-img-wrap"><button class="gt-lb-trigger" onclick="_gtOpenLightbox('` + imgSrc + "','" + imgAlt + "','" + imgCaption + `')" aria-label="View image larger` + (imgAlt ? ": " + imgAlt : "") + '"><img class="gt-lb-thumb" src="' + imgSrc + '" alt="" aria-hidden="true" /></button>' + (imgCaption ? '<p class="gt-caption">' + imgCaption + "</p>" : "") + "</div>"
+        `<div class="gt-img-wrap"><button class="gt-lb-trigger" onclick="_gtOpenLightbox('` + escapeJsString(imgSrc) + "','" + escapeJsString(imgAlt) + "','" + escapeJsString(imgCaption) + `')" aria-label="View image larger` + (imgAlt ? ": " + imgAlt : "") + '"><img class="gt-lb-thumb" src="' + imgSrc + '" alt="" aria-hidden="true" /></button>' + (imgCaption ? '<p class="gt-caption">' + imgCaption + "</p>" : "") + "</div>"
       );
     }
     if (!hasImage && !hasAttribution) {
@@ -3083,7 +3086,7 @@
     ".gt-tooltip{width:380px;line-height:1;color:#000;font-size:1.1rem;border-radius:0.5rem;}",
     "@media(max-width:380px){.gt-tooltip{width:95vw;}}",
     ".gt-img-wrap{margin-bottom:8px;display:flex;justify-content:center;flex-direction:column;}",
-    ".gt-caption{margin:4px 0 0;font-size:1.1rem!important,font-weight:normal!important;color:#4f4545;text-align:center;}",
+    ".gt-caption{margin:4px 0 0;font-size:1.1rem!important;font-weight:normal!important;color:#4f4545;text-align:center;}",
     ".gt-definition{margin:0 0 6px; font-size:1.1rem!important; line-height:1.5!important; font-weight:normal!important;}",
     ".gt-source{margin:4px 0;font-size:1.1rem;color:#aaa;}",
     ".gt-link{display:inline-block;margin-top:4px;font-size:1.1rem;color:#4a90e2;text-decoration:none;}",
@@ -3309,7 +3312,7 @@
 
   // src/features/glossaryTable/target.ts
   var OUTPUT_ID = "glossary-output";
-  var FOOTER_SELECTOR = ".elm-content-footer";
+  var FOOTER_SELECTOR = ".mt-content-footer";
   function resolveGlossaryContainer() {
     const existing = resolveOwnElement(`#${OUTPUT_ID}`);
     if (existing) return existing;
@@ -3385,7 +3388,7 @@
       return (_a = el.parentNode) == null ? void 0 : _a.removeChild(el);
     });
   }
-  document.addEventListener("DOMContentLoaded", () => {
+  function init() {
     var _a;
     (_a = resolveOwnElement("#visibleGlossary")) == null ? void 0 : _a.remove();
     const style = document.createElement("style");
@@ -3453,7 +3456,12 @@
         }
       }).catch((error) => console.error("[glossary] freshness check failed:", error));
     }
-  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 
   // src/features/glossarize/cleanup.ts
   function cleanupGlossaryTerms() {
@@ -3546,16 +3554,7 @@
     const pageIdEl = resolveOwnElement("#pageId");
     if (!pageIdEl) return;
     const library = extractLibrary(window.location.hostname);
-    const key = cacheKey(coverID, library);
-    const raw = localStorage.getItem(key);
-    if (!raw) return;
-    let cached;
-    try {
-      cached = JSON.parse(raw);
-    } catch (e) {
-      return;
-    }
-    const data = cached.data;
+    const data = getCached(coverID, library);
     if (!((_a = data == null ? void 0 : data.items) == null ? void 0 : _a.length)) return;
     const items = data.items;
     const termMap = {};
@@ -3565,8 +3564,8 @@
     items.forEach((item) => {
       if (!Array.isArray(item.aliases)) return;
       item.aliases.forEach((alias) => {
-        const key2 = alias.toLowerCase().trim();
-        if (key2 && !termMap[key2]) termMap[key2] = item;
+        const key = alias.toLowerCase().trim();
+        if (key && !termMap[key]) termMap[key] = item;
       });
     });
     activeTermMap = termMap;
@@ -3591,9 +3590,13 @@
     function flush() {
       timer = null;
       const termMap = getActiveTermMap();
+      if (!termMap) {
+        timer = setTimeout(flush, DEBOUNCE_MS);
+        return;
+      }
       const roots = Array.from(pendingRoots);
       pendingRoots.clear();
-      if (!termMap || !roots.length) return;
+      if (!roots.length) return;
       observer.disconnect();
       roots.forEach((root) => glossarizeBody(termMap, root));
       attachTooltips();
@@ -3616,6 +3619,19 @@
       timer = setTimeout(flush, DEBOUNCE_MS);
     });
     observer.observe(contentRoot, { childList: true, subtree: true, characterData: true });
+    return {
+      pause() {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        observer.disconnect();
+      },
+      resume() {
+        observer.takeRecords();
+        observer.observe(contentRoot, { childList: true, subtree: true, characterData: true });
+      }
+    };
   }
 
   // src/features/glossarize/index.ts
@@ -3623,19 +3639,21 @@
     const el = resolveOwnElement("#coverID");
     if (el == null ? void 0 : el.value) runGlossarize(el.value);
   }
-  function init() {
+  function init2() {
     tryRunFromCache();
+    const watcher = watchForContentChanges();
     document.addEventListener("glossary:updated", (e) => {
       const detail = e.detail;
+      watcher.pause();
       cleanupGlossaryTerms();
       runGlossarize(detail.coverID);
+      watcher.resume();
     });
-    watchForContentChanges();
   }
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", init2);
   } else {
-    init();
+    init2();
   }
 
   // src/tooltip/lightbox.ts

@@ -1,5 +1,5 @@
 import { API_HOST, LICENSE_MAP } from "../config";
-import { escapeHTML } from "../utils/html";
+import { escapeHTML, escapeJsString } from "../utils/html";
 import { unescapeLatex } from "../utils/latex";
 import type { GlossaryItem } from "../types";
 
@@ -92,11 +92,11 @@ export function buildTooltipHTML(item: GlossaryItem): string {
       '<div class="gt-img-wrap">' +
         '<button class="gt-lb-trigger"' +
         " onclick=\"_gtOpenLightbox('" +
-        imgSrc +
+        escapeJsString(imgSrc) +
         "','" +
-        imgAlt +
+        escapeJsString(imgAlt) +
         "','" +
-        imgCaption +
+        escapeJsString(imgCaption) +
         "')\"" +
         ' aria-label="View image larger' +
         (imgAlt ? ": " + imgAlt : "") +

@@ -1,9 +1,9 @@
-import { cacheKey } from "../../utils/cache";
+import { getCached } from "../../utils/cache";
 import { extractLibrary } from "../../utils/library";
 import { resolveOwnElement } from "../../utils/scope";
 import { glossarizeBody } from "./body";
 import { attachTooltips } from "../../tooltip/attach";
-import type { CachedEntry, GlossaryData, GlossaryItem } from "../../types";
+import type { GlossaryData, GlossaryItem } from "../../types";
 
 // The term map built by the most recent successful run, kept around so
 // features/glossarize/watch.ts can glossarize newly-added content later
@@ -20,19 +20,7 @@ export function runGlossarize(coverID: string): void {
   if (!pageIdEl) return;
 
   const library = extractLibrary(window.location.hostname);
-  const key = cacheKey(coverID, library);
-
-  const raw = localStorage.getItem(key);
-  if (!raw) return;
-
-  let cached: CachedEntry<GlossaryData>;
-  try {
-    cached = JSON.parse(raw);
-  } catch {
-    return;
-  }
-
-  const data = cached.data;
+  const data = getCached<GlossaryData>(coverID, library);
   if (!data?.items?.length) return;
 
   const items = data.items;

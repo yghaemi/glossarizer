@@ -12,15 +12,19 @@ function init(): void {
   // Warm visit: coverID already in DOM from a previous load
   tryRunFromCache();
 
-  // Fires after every render (both cached and fresh fetch paths)
+  // Catch content added after the initial pass (see watch.ts).
+  const watcher = watchForContentChanges();
+
+  // Fires after every render (both cached and fresh fetch paths). Pause the
+  // mutation watcher around our own cleanup+reglossarize edits so it doesn't
+  // capture them as "new content" and redundantly re-run itself afterward.
   document.addEventListener("glossary:updated", (e) => {
     const detail = (e as CustomEvent<{ coverID: string; library: string }>).detail;
+    watcher.pause();
     cleanupGlossaryTerms();
     runGlossarize(detail.coverID);
+    watcher.resume();
   });
-
-  // Catch content added after the initial pass (see watch.ts).
-  watchForContentChanges();
 }
 
 if (document.readyState === "loading") {

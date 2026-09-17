@@ -26,7 +26,7 @@ function removeLegacyGlossarizer(): void {
     .forEach((el) => el.parentNode?.removeChild(el));
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function init(): void {
   // Clear out any stale glossary table (e.g. left over from a prior render)
   // before this run renders its own.
   resolveOwnElement("#visibleGlossary")?.remove();
@@ -127,4 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch((error) => console.error("[glossary] freshness check failed:", error));
   }
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
