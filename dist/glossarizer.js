@@ -70,7 +70,7 @@
   }
 
   // src/config.ts
-  var API_HOST = "https://undertaken-creations-keith-victorian.trycloudflare.com";
+  var API_HOST = "https://option-shelf-animals-destiny.trycloudflare.com";
   var CACHE_TTL = 60 * 60 * 1e3;
   var LICENSE_MAP = {
     arr: "All Rights Reserved",
