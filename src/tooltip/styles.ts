@@ -16,7 +16,7 @@ const GT_STYLES = [
   ".gt-link:hover{text-decoration:underline;}",
   "button.glossary-term{border:none;border-bottom:1px dotted currentColor;background:none;padding:0;margin:0;font:inherit;color:inherit;cursor:help;display:inline;}",
   '.tippy-box[data-theme~="light"]{background-color:#ffffff; border-radius:0.2rem;  border:1px solid #4a90e2;}',
-  '.tippy-box[data-theme~="light"] .tippy-content{padding:10px 14px;font-size:1.1rem; line-height:1;}',
+  '.tippy-box[data-theme~="light"] .tippy-content{padding:14px;font-size:1.1rem; line-height:1;}',
   ".gt-tabs{display:flex;border-bottom:1px solid #ddd;margin-bottom:8px;}",
   ".gt-tab{flex:1;padding:4px 8px;border:none;background:none;cursor:pointer;font-size:1.1rem;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;}",
   ".gt-tab--active{color:#4a90e2;border-bottom:2px solid #4a90e2;}",
