@@ -3233,6 +3233,16 @@
       }
     });
   }
+  document.addEventListener("keydown", (e) => {
+    var _a;
+    if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+    const el = (_a = e.target) == null ? void 0 : _a.closest(
+      '[role="link"][tabindex="0"]'
+    );
+    if (!(el == null ? void 0 : el._tippy)) return;
+    e.preventDefault();
+    el._tippy.show();
+  });
 
   // src/features/glossaryTable/render.ts
   var TABLE_TERM_SELECTOR = ".glossaryTerm[data-gt-item]";

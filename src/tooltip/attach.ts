@@ -10,7 +10,7 @@ interface GtInstanceExtras {
 }
 
 interface ElementWithTippy extends HTMLElement {
-  _tippy?: unknown;
+  _tippy?: Instance;
 }
 
 // Idempotent: only wires up `.glossary-term` buttons that don't already have
@@ -132,3 +132,20 @@ export function attachTooltips(root: ParentNode = document, selector = ".glossar
     },
   });
 }
+
+// Non-button reference elements (role="link" spans — e.g. the glossary
+// table's own terms, see features/glossaryTable/render.ts) don't get a
+// native click fired on Enter/Space the way a real <button> does, so
+// Tippy's "click" trigger never fires for keyboard users on those. Show the
+// tooltip manually in that case. Real <button> targets (body-prose
+// auto-linked terms) are left alone — they already get this via the native
+// click their own Enter/Space press produces.
+document.addEventListener("keydown", (e: KeyboardEvent) => {
+  if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+  const el = (e.target as HTMLElement | null)?.closest<ElementWithTippy>(
+    '[role="link"][tabindex="0"]',
+  );
+  if (!el?._tippy) return;
+  e.preventDefault();
+  el._tippy.show();
+});
