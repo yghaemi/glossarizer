@@ -3432,7 +3432,6 @@
           }
           removeLegacyGlossarizer();
           setCache(String(data.data.coverID), data.data.library, data.data);
-          data.data.items.sort((a, b) => a.term.localeCompare(b.term));
           renderGlossary(data.data);
           dispatchUpdated(String(data.data.coverID), data.data.library);
         }).catch((error) => console.error("[glossary] full fetch/render failed:", error));
@@ -3446,7 +3445,6 @@
         if (cached && cached.lastUpdatedAt && new Date(cached.lastUpdatedAt) >= new Date(details.latestUpdatedAt)) {
           console.log("Glossary loaded from cache");
           removeLegacyGlossarizer();
-          cached.items.sort((a, b) => a.term.localeCompare(b.term));
           renderGlossary(cached);
           dispatchUpdated(details.coverID, library);
         } else {
