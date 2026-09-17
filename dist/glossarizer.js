@@ -70,7 +70,7 @@
   }
 
   // src/config.ts
-  var API_HOST = "https://interest-keen-observed-karen.trycloudflare.com";
+  var API_HOST = "https://cameron-internet-bizarre-costs.trycloudflare.com";
   var CACHE_TTL = 60 * 60 * 1e3;
   var LICENSE_MAP = {
     arr: "All Rights Reserved",
@@ -3247,7 +3247,9 @@
       const rows = terms.map((item) => {
         var _a, _b;
         try {
-          const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '" data-gt-item="' + escapeHTML(JSON.stringify(item)) + '">' + unescapeLatex(item.term) + "</span>";
+          const aliasList = Array.isArray(item.aliases) ? item.aliases.map((a) => String(a).trim()).filter(Boolean).join(", ") : "";
+          const aliasSuffix = aliasList ? " (" + unescapeLatex(aliasList) + ")" : "";
+          const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '" data-gt-item="' + escapeHTML(JSON.stringify(item)) + '">' + unescapeLatex(item.term) + aliasSuffix + "</span>";
           if (termOnly) {
             return '<p class="glossaryElement">' + termSpan + "</p>";
           }
