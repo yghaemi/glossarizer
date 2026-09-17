@@ -20,6 +20,15 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
     const rows = terms
       .map((item) => {
         try {
+          const aliasList = Array.isArray(item.aliases)
+            ? item.aliases
+                .map((a) => String(a).trim())
+                .filter(Boolean)
+                .join(", ")
+            : "";
+          const aliasSuffix = aliasList
+            ? " (" + unescapeLatex(aliasList) + ")"
+            : "";
           const termSpan =
             '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' +
             termAnchorId(item.term) +
@@ -27,6 +36,7 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
             escapeHTML(JSON.stringify(item)) +
             '">' +
             unescapeLatex(item.term) +
+            aliasSuffix +
             "</span>";
           if (termOnly) {
             return '<p class="glossaryElement">' + termSpan + "</p>";
