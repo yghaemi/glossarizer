@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           removeLegacyGlossarizer();
           setCache(String(data.data.coverID), data.data.library, data.data);
-          data.data.items.sort((a, b) => a.term.localeCompare(b.term));
+         
           renderGlossary(data.data);
           dispatchUpdated(String(data.data.coverID), data.data.library);
         })
@@ -119,7 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ) {
           console.log("Glossary loaded from cache");
           removeLegacyGlossarizer();
-          cached.items.sort((a, b) => a.term.localeCompare(b.term));
           renderGlossary(cached);
           dispatchUpdated(details.coverID, library);
         } else {
