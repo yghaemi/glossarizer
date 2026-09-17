@@ -70,7 +70,7 @@
   }
 
   // src/config.ts
-  var API_HOST = "https://cameron-internet-bizarre-costs.trycloudflare.com";
+  var API_HOST = "https://undertaken-creations-keith-victorian.trycloudflare.com";
   var CACHE_TTL = 60 * 60 * 1e3;
   var LICENSE_MAP = {
     arr: "All Rights Reserved",
