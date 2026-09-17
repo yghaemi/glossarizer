@@ -12,6 +12,7 @@ export interface GlossaryItem {
   imageLicense?: string;
   imageAuthor?: string;
   imageSource?: string;
+  italic?: boolean;
 }
 
 export type GlossaryConfigMode = "PAGE" | "CHAPTER" | "BACKMATTER";

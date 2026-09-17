@@ -29,13 +29,14 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
           const aliasSuffix = aliasList
             ? " (" + unescapeLatex(aliasList) + ")"
             : "";
+          const termText = unescapeLatex(item.term);
           const termSpan =
             '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' +
             termAnchorId(item.term) +
             '" data-gt-item="' +
             escapeHTML(JSON.stringify(item)) +
             '">' +
-            unescapeLatex(item.term) +
+            (item.italic ? "<em>" + termText + "</em>" : termText) +
             aliasSuffix +
             "</span>";
           if (termOnly) {

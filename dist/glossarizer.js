@@ -3259,7 +3259,8 @@
         try {
           const aliasList = Array.isArray(item.aliases) ? item.aliases.map((a) => String(a).trim()).filter(Boolean).join(", ") : "";
           const aliasSuffix = aliasList ? " (" + unescapeLatex(aliasList) + ")" : "";
-          const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '" data-gt-item="' + escapeHTML(JSON.stringify(item)) + '">' + unescapeLatex(item.term) + aliasSuffix + "</span>";
+          const termText = unescapeLatex(item.term);
+          const termSpan = '<span class="glossaryTerm" role="link" tabindex="0" data-gt-target="' + termAnchorId(item.term) + '" data-gt-item="' + escapeHTML(JSON.stringify(item)) + '">' + (item.italic ? "<em>" + termText + "</em>" : termText) + aliasSuffix + "</span>";
           if (termOnly) {
             return '<p class="glossaryElement">' + termSpan + "</p>";
           }
