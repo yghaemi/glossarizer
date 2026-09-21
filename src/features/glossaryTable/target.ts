@@ -51,10 +51,13 @@ export function resolveGlossaryContainer(pageId: string): HTMLElement | null {
 
 // A page can carry more than one output placeholder (e.g. one per chapter
 // section), but only one is ever the render target for the current page.
-// Empty the rest so a placeholder meant for a different page/chapter isn't
-// left showing stale or template-default content.
-export function clearOtherGlossaryOutputs(container: HTMLElement): void {
+// Empty any other one whose id names a *different* page (glossary-output-N
+// where N != pageId) so it doesn't keep showing stale or template-default
+// content. An id with no page suffix at all (legacy/no convention) is left
+// alone — it isn't claiming to belong to any particular page.
+export function clearOtherGlossaryOutputs(pageId: string): void {
   resolveOwnElements<HTMLElement>(OUTPUT_SELECTOR).forEach((el) => {
-    if (el !== container) el.innerHTML = "";
+    const elPageId = outputElementPageId(el);
+    if (elPageId != null && elPageId !== pageId) el.innerHTML = "";
   });
 }

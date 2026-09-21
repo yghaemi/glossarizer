@@ -3346,9 +3346,10 @@
     footer.parentNode.insertBefore(container, footer);
     return container;
   }
-  function clearOtherGlossaryOutputs(container) {
+  function clearOtherGlossaryOutputs(pageId) {
     resolveOwnElements(OUTPUT_SELECTOR).forEach((el) => {
-      if (el !== container) el.innerHTML = "";
+      const elPageId = outputElementPageId(el);
+      if (elPageId != null && elPageId !== pageId) el.innerHTML = "";
     });
   }
 
@@ -3453,7 +3454,7 @@
             return;
           }
           renderTable(items, container);
-          clearOtherGlossaryOutputs(container);
+          clearOtherGlossaryOutputs(pageId);
         } catch (err) {
           console.error("[glossary] renderGlossary failed:", err);
         }

@@ -87,7 +87,7 @@ function init(): void {
           return;
         }
         renderTable(items, container);
-        clearOtherGlossaryOutputs(container);
+        clearOtherGlossaryOutputs(pageId);
       } catch (err) {
         console.error("[glossary] renderGlossary failed:", err);
       }
