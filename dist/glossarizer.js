@@ -131,16 +131,6 @@
     }
     return document.querySelector(selector);
   }
-  function resolveOwnElements(selector) {
-    var _a;
-    let scope = (_a = ownScript == null ? void 0 : ownScript.parentElement) != null ? _a : null;
-    while (scope) {
-      const found = scope.querySelectorAll(selector);
-      if (found.length) return Array.from(found);
-      scope = scope.parentElement;
-    }
-    return Array.from(document.querySelectorAll(selector));
-  }
 
   // src/utils/anchor.ts
   function termAnchorId(term) {
@@ -3347,7 +3337,7 @@
     return container;
   }
   function clearOtherGlossaryOutputs(pageId) {
-    resolveOwnElements(OUTPUT_SELECTOR).forEach((el) => {
+    document.querySelectorAll(OUTPUT_SELECTOR).forEach((el) => {
       const elPageId = outputElementPageId(el);
       if (elPageId != null && elPageId !== pageId) el.innerHTML = "";
     });

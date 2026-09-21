@@ -1,4 +1,4 @@
-import { resolveOwnElement, resolveOwnElements } from "../../utils/scope";
+import { resolveOwnElement } from "../../utils/scope";
 
 const OUTPUT_ID = "glossary-output";
 // Template-provided output elements now carry a page-specific id (e.g.
@@ -50,13 +50,16 @@ export function resolveGlossaryContainer(pageId: string): HTMLElement | null {
 }
 
 // A page can carry more than one output placeholder (e.g. one per chapter
-// section), but only one is ever the render target for the current page.
-// Empty any other one whose id names a *different* page (glossary-output-N
-// where N != pageId) so it doesn't keep showing stale or template-default
-// content. An id with no page suffix at all (legacy/no convention) is left
-// alone — it isn't claiming to belong to any particular page.
+// section), scattered anywhere in the content — not necessarily near this
+// script's own tag — so this deliberately searches the whole document
+// rather than using resolveOwnElement's ancestor-scoped lookup. Only one
+// placeholder is ever the render target for the current page; empty any
+// other one whose id names a *different* page (glossary-output-N where N !=
+// pageId) so it doesn't keep showing stale or template-default content. An
+// id with no page suffix at all (legacy/no convention) is left alone — it
+// isn't claiming to belong to any particular page.
 export function clearOtherGlossaryOutputs(pageId: string): void {
-  resolveOwnElements<HTMLElement>(OUTPUT_SELECTOR).forEach((el) => {
+  document.querySelectorAll<HTMLElement>(OUTPUT_SELECTOR).forEach((el) => {
     const elPageId = outputElementPageId(el);
     if (elPageId != null && elPageId !== pageId) el.innerHTML = "";
   });
