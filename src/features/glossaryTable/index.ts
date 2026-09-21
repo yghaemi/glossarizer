@@ -4,7 +4,12 @@ import { getCached, setCache } from "../../utils/cache";
 import { resolveOwnElement } from "../../utils/scope";
 import { renderTable } from "./render";
 import { selectGlossaryItems } from "./selectItems";
-import { resolveGlossaryContainer } from "./target";
+import {
+  resolveGlossaryContainer,
+  findExistingGlossaryOutput,
+  outputElementPageId,
+  clearOtherGlossaryOutputs,
+} from "./target";
 import { glossaryUrl, fetchFreshness, fetchFullGlossary, fetchCurrentPageId } from "./api";
 import type { GlossaryData } from "../../types";
 
@@ -66,7 +71,8 @@ function init(): void {
 
     function renderGlossary(data: GlossaryData): void {
       try {
-        const items = selectGlossaryItems(data, pageId);
+        const outputPageId = outputElementPageId(findExistingGlossaryOutput());
+        const items = selectGlossaryItems(data, pageId, outputPageId);
 
         if (!items.length) {
           console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
@@ -75,12 +81,13 @@ function init(): void {
           return;
         }
 
-        const container = resolveGlossaryContainer();
+        const container = resolveGlossaryContainer(pageId);
         if (!container) {
           console.error("[glossary] no #glossary-output or footer found; skipping render");
           return;
         }
         renderTable(items, container);
+        clearOtherGlossaryOutputs(container);
       } catch (err) {
         console.error("[glossary] renderGlossary failed:", err);
       }

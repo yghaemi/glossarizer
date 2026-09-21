@@ -25,3 +25,18 @@ export function resolveOwnElement<T extends Element = HTMLElement>(selector: str
   // plain document-wide lookup rather than failing outright.
   return document.querySelector<T>(selector);
 }
+
+// Same ancestor-walk as resolveOwnElement, but collects every match at the
+// narrowest scope that has any, instead of stopping at the first — for
+// operations that need to see all of this instance's own copies of
+// something (e.g. clearing every other glossary-output placeholder on this
+// page, see glossaryTable/target.ts), not just the nearest one.
+export function resolveOwnElements<T extends Element = HTMLElement>(selector: string): T[] {
+  let scope: Element | null = ownScript?.parentElement ?? null;
+  while (scope) {
+    const found = scope.querySelectorAll<T>(selector);
+    if (found.length) return Array.from(found);
+    scope = scope.parentElement;
+  }
+  return Array.from(document.querySelectorAll<T>(selector));
+}

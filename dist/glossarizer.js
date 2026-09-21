@@ -131,6 +131,16 @@
     }
     return document.querySelector(selector);
   }
+  function resolveOwnElements(selector) {
+    var _a;
+    let scope = (_a = ownScript == null ? void 0 : ownScript.parentElement) != null ? _a : null;
+    while (scope) {
+      const found = scope.querySelectorAll(selector);
+      if (found.length) return Array.from(found);
+      scope = scope.parentElement;
+    }
+    return Array.from(document.querySelectorAll(selector));
+  }
 
   // src/utils/anchor.ts
   function termAnchorId(term) {
@@ -3293,7 +3303,7 @@
   }
 
   // src/features/glossaryTable/selectItems.ts
-  function selectGlossaryItems(data, pageId) {
+  function selectGlossaryItems(data, pageId, outputPageId) {
     if (pageId === data.glossaryID) return data.items;
     switch (data.mode) {
       case "PAGE":
@@ -3301,7 +3311,9 @@
       case "BACKMATTER":
         return [];
       case "CHAPTER": {
-        const group = data.groups.find((g) => g.targetPageId === pageId);
+        const group = data.groups.find(
+          (g) => g.targetPageId === pageId || outputPageId != null && g.targetPageId === outputPageId
+        );
         if (!group) return [];
         return data.items.filter((item) => item.pages.some((page) => group.pageIds.includes(page)));
       }
@@ -3312,16 +3324,32 @@
 
   // src/features/glossaryTable/target.ts
   var OUTPUT_ID = "glossary-output";
+  var OUTPUT_SELECTOR = '[name="glossary-output"]';
   var FOOTER_SELECTOR = ".mt-content-footer";
-  function resolveGlossaryContainer() {
-    const existing = resolveOwnElement(`#${OUTPUT_ID}`);
+  function outputElementPageId(el) {
+    var _a;
+    const prefix = OUTPUT_ID + "-";
+    const id = (_a = el == null ? void 0 : el.id) != null ? _a : "";
+    return id.startsWith(prefix) ? id.slice(prefix.length) : null;
+  }
+  function findExistingGlossaryOutput() {
+    return resolveOwnElement(OUTPUT_SELECTOR);
+  }
+  function resolveGlossaryContainer(pageId) {
+    const existing = findExistingGlossaryOutput();
     if (existing) return existing;
     const footer = resolveOwnElement(FOOTER_SELECTOR);
     if (!(footer == null ? void 0 : footer.parentNode)) return null;
     const container = document.createElement("div");
-    container.id = OUTPUT_ID;
+    container.id = `${OUTPUT_ID}-${pageId}`;
+    container.setAttribute("name", OUTPUT_ID);
     footer.parentNode.insertBefore(container, footer);
     return container;
+  }
+  function clearOtherGlossaryOutputs(container) {
+    resolveOwnElements(OUTPUT_SELECTOR).forEach((el) => {
+      if (el !== container) el.innerHTML = "";
+    });
   }
 
   // src/features/glossaryTable/api.ts
@@ -3413,17 +3441,19 @@
       const url = glossaryUrl(pageId, library);
       function renderGlossary(data) {
         try {
-          const items = selectGlossaryItems(data, pageId);
+          const outputPageId = outputElementPageId(findExistingGlossaryOutput());
+          const items = selectGlossaryItems(data, pageId, outputPageId);
           if (!items.length) {
             console.warn("[glossary] no terms to render for this page", { pageId, mode: data.mode });
             return;
           }
-          const container = resolveGlossaryContainer();
+          const container = resolveGlossaryContainer(pageId);
           if (!container) {
             console.error("[glossary] no #glossary-output or footer found; skipping render");
             return;
           }
           renderTable(items, container);
+          clearOtherGlossaryOutputs(container);
         } catch (err) {
           console.error("[glossary] renderGlossary failed:", err);
         }
@@ -3490,7 +3520,7 @@
         if (!el) return NodeFilter.FILTER_REJECT;
         if (SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
         if (el.closest(".glossary-term")) return NodeFilter.FILTER_REJECT;
-        if (el.closest("#glossary-output")) return NodeFilter.FILTER_REJECT;
+        if (el.closest('[name="glossary-output"]')) return NodeFilter.FILTER_REJECT;
         if (el.closest("mjx-container, .MathJax, .MathJax_Display")) return NodeFilter.FILTER_REJECT;
         if (regex.test((_a = node.nodeValue) != null ? _a : "")) {
           regex.lastIndex = 0;

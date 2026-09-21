@@ -32,8 +32,10 @@ export function glossarizeBody(
       if (SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
       if (el.closest(".glossary-term")) return NodeFilter.FILTER_REJECT;
       // Don't glossarize the rendered glossary list itself; anchors should
-      // point at the page prose, not entries inside the list.
-      if (el.closest("#glossary-output")) return NodeFilter.FILTER_REJECT;
+      // point at the page prose, not entries inside the list. The output
+      // element's id varies per page (e.g. "glossary-output-8985"), so match
+      // on its stable name attribute instead (see glossaryTable/target.ts).
+      if (el.closest('[name="glossary-output"]')) return NodeFilter.FILTER_REJECT;
       // Skip text nodes inside MathJax-rendered math containers.
       if (el.closest("mjx-container, .MathJax, .MathJax_Display")) return NodeFilter.FILTER_REJECT;
       if (regex.test(node.nodeValue ?? "")) {
