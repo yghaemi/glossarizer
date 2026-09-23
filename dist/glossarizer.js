@@ -70,7 +70,7 @@
   }
 
   // src/config.ts
-  var API_HOST = "https://api.knitcanvas.fun";
+  var API_HOST = "https://synthetic-lip-writes-thee.trycloudflare.com";
   var CACHE_TTL = 60 * 60 * 1e3;
   var LICENSE_MAP = {
     arr: "All Rights Reserved",
