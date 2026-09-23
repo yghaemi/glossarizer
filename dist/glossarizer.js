@@ -3301,9 +3301,10 @@
       case "BACKMATTER":
         return [];
       case "CHAPTER": {
-        const group = data.groups.find(
-          (g) => g.targetPageId === pageId || outputPageId != null && g.targetPageId === outputPageId
-        );
+        let group = data.groups.find((g) => g.targetPageId === pageId);
+        if (!group && outputPageId != null && outputPageId === pageId) {
+          group = data.groups.find((g) => g.pageIds.includes(pageId));
+        }
         if (!group) return [];
         return data.items.filter((item) => item.pages.some((page) => group.pageIds.includes(page)));
       }
