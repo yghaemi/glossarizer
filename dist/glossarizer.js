@@ -70,7 +70,7 @@
   }
 
   // src/config.ts
-  var API_HOST = "https://synthetic-lip-writes-thee.trycloudflare.com";
+  var API_HOST = "https://commons.libretexts.org";
   var CACHE_TTL = 60 * 60 * 1e3;
   var LICENSE_MAP = {
     arr: "All Rights Reserved",
