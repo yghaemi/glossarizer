@@ -15,7 +15,7 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
       return;
     }
 
-    const termOnly = container.dataset.termonly === "true";
+    const termOnly = container.getAttribute("termonly") === "true";
     const library = extractLibrary(window.location.hostname);
     const rows = terms
       .map((item) => {
