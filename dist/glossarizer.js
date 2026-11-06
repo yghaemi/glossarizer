@@ -70,7 +70,7 @@
   }
 
   // src/config.ts
-  var API_HOST = "https://commons.libretexts.org";
+  var API_HOST = "https://staging.commons.libretexts.org";
   var CACHE_TTL = 60 * 60 * 1e3;
   var LICENSE_MAP = {
     arr: "All Rights Reserved",
