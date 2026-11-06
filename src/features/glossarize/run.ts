@@ -1,6 +1,6 @@
 import { getCached } from "../../utils/cache";
 import { extractLibrary } from "../../utils/library";
-import { resolveOwnElement } from "../../utils/scope";
+import { getGlobalSettingsPageId } from "../../utils/pageId";
 import { glossarizeBody } from "./body";
 import { attachTooltips } from "../../tooltip/attach";
 import type { GlossaryData, GlossaryItem } from "../../types";
@@ -16,8 +16,7 @@ export function getActiveTermMap(): Record<string, GlossaryItem> | null {
 
 // Read glossary data from cache and glossarize the page body against it.
 export function runGlossarize(coverID: string): void {
-  const pageIdEl = resolveOwnElement("#pageId");
-  if (!pageIdEl) return;
+  if (!getGlobalSettingsPageId()) return;
 
   const library = extractLibrary(window.location.hostname);
   const data = getCached<GlossaryData>(coverID, library);

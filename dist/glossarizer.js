@@ -132,6 +132,19 @@
     return document.querySelector(selector);
   }
 
+  // src/utils/pageId.ts
+  function getGlobalSettingsPageId() {
+    const el = document.getElementById("mt-global-settings");
+    if (!(el == null ? void 0 : el.textContent)) return null;
+    try {
+      const settings = JSON.parse(el.textContent);
+      return settings.pageId != null && settings.pageId !== "" ? String(settings.pageId) : null;
+    } catch (err) {
+      console.warn("[glossary] failed to parse #mt-global-settings:", err);
+      return null;
+    }
+  }
+
   // src/utils/anchor.ts
   function termAnchorId(term) {
     return "gt-anchor-" + String(term).toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -3414,17 +3427,15 @@
     const style = document.createElement("style");
     style.textContent = ".glossaryTerm{font-weight:bold;cursor:pointer;}.glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
     document.head.appendChild(style);
-    const pageIdEl = resolveOwnElement("#pageId");
     const library = extractLibrary(window.location.hostname);
-    fetchCurrentPageId(library).catch((error) => {
-      console.warn(
-        "[glossary] Deki pageId lookup failed, falling back to #pageId input:",
-        error
-      );
-      return pageIdEl == null ? void 0 : pageIdEl.value;
-    }).then((pageId) => {
+    const settingsPageId = getGlobalSettingsPageId();
+    const pageIdPromise = settingsPageId ? Promise.resolve(settingsPageId) : fetchCurrentPageId(library).catch((error) => {
+      console.warn("[glossary] Deki pageId lookup failed:", error);
+      return null;
+    });
+    pageIdPromise.then((pageId) => {
       if (!pageId) {
-        console.error("[glossary] no pageId available (Deki lookup and #pageId both failed); skipping render");
+        console.error("[glossary] no pageId available (#mt-global-settings and Deki lookup both failed); skipping render");
         return;
       }
       run(pageId);
@@ -3573,8 +3584,7 @@
   }
   function runGlossarize(coverID) {
     var _a;
-    const pageIdEl = resolveOwnElement("#pageId");
-    if (!pageIdEl) return;
+    if (!getGlobalSettingsPageId()) return;
     const library = extractLibrary(window.location.hostname);
     const data = getCached(coverID, library);
     if (!((_a = data == null ? void 0 : data.items) == null ? void 0 : _a.length)) return;

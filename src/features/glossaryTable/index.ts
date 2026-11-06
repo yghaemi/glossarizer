@@ -2,6 +2,7 @@ import "./scroll"; // registers document-level click/keydown listeners for scrol
 import { extractLibrary } from "../../utils/library";
 import { getCached, setCache } from "../../utils/cache";
 import { resolveOwnElement } from "../../utils/scope";
+import { getGlobalSettingsPageId } from "../../utils/pageId";
 import { renderTable } from "./render";
 import { selectGlossaryItems } from "./selectItems";
 import {
@@ -42,29 +43,27 @@ function init(): void {
     ".glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
   document.head.appendChild(style);
 
-  const pageIdEl = resolveOwnElement<HTMLInputElement>("#pageId");
   const library = extractLibrary(window.location.hostname);
 
-  // Resolve the real current-page id via the Deki API, keyed off
-  // window.location rather than the #pageId hidden input — transclusion can
-  // duplicate that input's markup, making its value untrustworthy (see
-  // utils/scope.ts). Fall back to the hidden input if the lookup fails so a
-  // Deki API hiccup doesn't take the whole glossary down.
-  fetchCurrentPageId(library)
-    .catch((error) => {
-      console.warn(
-        "[glossary] Deki pageId lookup failed, falling back to #pageId input:",
-        error,
-      );
-      return pageIdEl?.value;
-    })
-    .then((pageId) => {
-      if (!pageId) {
-        console.error("[glossary] no pageId available (Deki lookup and #pageId both failed); skipping render");
-        return;
-      }
-      run(pageId);
-    });
+  // Prefer the page id from #mt-global-settings: it always describes the page
+  // actually being viewed (transclusion can't duplicate it, unlike the old
+  // #pageId hidden input — see utils/pageId.ts) and needs no network round
+  // trip. Fall back to the Deki API lookup if the settings blob is missing.
+  const settingsPageId = getGlobalSettingsPageId();
+  const pageIdPromise: Promise<string | null> = settingsPageId
+    ? Promise.resolve(settingsPageId)
+    : fetchCurrentPageId(library).catch((error) => {
+        console.warn("[glossary] Deki pageId lookup failed:", error);
+        return null;
+      });
+
+  pageIdPromise.then((pageId) => {
+    if (!pageId) {
+      console.error("[glossary] no pageId available (#mt-global-settings and Deki lookup both failed); skipping render");
+      return;
+    }
+    run(pageId);
+  });
 
   function run(pageId: string): void {
     const url = glossaryUrl(pageId, library);
