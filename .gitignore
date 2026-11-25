@@ -22,3 +22,6 @@ node_modules/
 .env.development
 .env.test
 .env.production
+
+./graphify-out
+graphify-out/*
