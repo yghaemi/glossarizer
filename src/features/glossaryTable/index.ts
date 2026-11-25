@@ -43,7 +43,12 @@ function init(): void {
     ".glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
   document.head.appendChild(style);
 
-  const library = extractLibrary(window.location.hostname);
+  const detectedLibrary = extractLibrary(window.location.hostname);
+  if (!detectedLibrary) {
+    console.warn(`[glossary] unrecognized library host "${window.location.hostname}"; skipping render`);
+    return;
+  }
+  const library = detectedLibrary;
 
   // Prefer the page id from #mt-global-settings: it always describes the page
   // actually being viewed (transclusion can't duplicate it, unlike the old

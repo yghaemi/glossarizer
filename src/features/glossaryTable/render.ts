@@ -43,12 +43,14 @@ export function renderTable(terms: GlossaryItem[], container: HTMLElement): void
             return '<p class="glossaryElement">' + termSpan + "</p>";
           }
           const pagesLinks =
-            item.pages
-              ?.map(
-                (page, index) =>
-                  `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`,
-              )
-              .join("") ?? "";
+            (library &&
+              item.pages
+                ?.map(
+                  (page, index) =>
+                    `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`,
+                )
+                .join("")) ||
+            "";
           return (
             '<p class="glossaryElement">' +
             termSpan +

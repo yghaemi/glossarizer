@@ -62,11 +62,30 @@
   });
 
   // src/utils/library.ts
+  var LIBRARIES = [
+    { key: "bio", text: "Biology" },
+    { key: "biz", text: "Business" },
+    { key: "chem", text: "Chemistry" },
+    { key: "dev", text: "Development" },
+    { key: "eng", text: "Engineering" },
+    { key: "espanol", text: "Espa\xF1ol" },
+    { key: "geo", text: "Geosciences" },
+    { key: "human", text: "Humanities" },
+    { key: "k12", text: "K12 Education" },
+    { key: "math", text: "Mathematics" },
+    { key: "med", text: "Health" },
+    { key: "phys", text: "Physics" },
+    { key: "socialsci", text: "Social Science" },
+    { key: "stats", text: "Statistics" },
+    { key: "workforce", text: "Workforce" }
+  ];
+  var LIBRARY_KEYS = new Set(LIBRARIES.map((l) => l.key));
   function extractLibrary(hostname) {
-    var _a, _b;
-    if (hostname.includes("localhost")) return "dev";
-    const parts = hostname.split(".");
-    return (_b = (_a = parts == null ? void 0 : parts[0]) == null ? void 0 : _a.toLowerCase()) != null ? _b : "dev";
+    var _a;
+    const host = hostname.toLowerCase();
+    if (host.includes("localhost")) return "dev";
+    const candidate = (_a = host.split(/[.-]/)[0]) != null ? _a : "";
+    return LIBRARY_KEYS.has(candidate) ? candidate : null;
   }
 
   // src/config.ts
@@ -3271,7 +3290,7 @@
       const termOnly = container.getAttribute("termonly") === "true";
       const library = extractLibrary(window.location.hostname);
       const rows = terms.map((item) => {
-        var _a, _b;
+        var _a;
         try {
           const aliasList = Array.isArray(item.aliases) ? item.aliases.map((a) => String(a).trim()).filter(Boolean).join(", ") : "";
           const aliasSuffix = aliasList ? " (" + unescapeLatex(aliasList) + ")" : "";
@@ -3280,9 +3299,9 @@
           if (termOnly) {
             return '<p class="glossaryElement">' + termSpan + "</p>";
           }
-          const pagesLinks = (_b = (_a = item.pages) == null ? void 0 : _a.map(
+          const pagesLinks = library && ((_a = item.pages) == null ? void 0 : _a.map(
             (page, index) => `<a href="https://${library}.libretexts.org/@go/page/${page}#${termAnchorId(item.term)}" target="_blank">(${index + 1})</a>`
-          ).join("")) != null ? _b : "";
+          ).join("")) || "";
           return '<p class="glossaryElement">' + termSpan + ' | <span class="glossaryDefinition">' + unescapeLatex(item.definition) + `<sup>${pagesLinks}</sup></span></p>`;
         } catch (itemErr) {
           console.error("[glossary] failed to render term:", item == null ? void 0 : item.term, itemErr);
@@ -3427,7 +3446,12 @@
     const style = document.createElement("style");
     style.textContent = ".glossaryTerm{font-weight:bold;cursor:pointer;}.glossaryTerm:focus-visible{outline-offset:2px;border-radius:2px;}";
     document.head.appendChild(style);
-    const library = extractLibrary(window.location.hostname);
+    const detectedLibrary = extractLibrary(window.location.hostname);
+    if (!detectedLibrary) {
+      console.warn(`[glossary] unrecognized library host "${window.location.hostname}"; skipping render`);
+      return;
+    }
+    const library = detectedLibrary;
     const settingsPageId = getGlobalSettingsPageId();
     const pageIdPromise = settingsPageId ? Promise.resolve(settingsPageId) : fetchCurrentPageId(library).catch((error) => {
       console.warn("[glossary] Deki pageId lookup failed:", error);
@@ -3586,6 +3610,7 @@
     var _a;
     if (!getGlobalSettingsPageId()) return;
     const library = extractLibrary(window.location.hostname);
+    if (!library) return;
     const data = getCached(coverID, library);
     if (!((_a = data == null ? void 0 : data.items) == null ? void 0 : _a.length)) return;
     const items = data.items;

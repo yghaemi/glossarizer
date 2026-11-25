@@ -19,6 +19,7 @@ export function runGlossarize(coverID: string): void {
   if (!getGlobalSettingsPageId()) return;
 
   const library = extractLibrary(window.location.hostname);
+  if (!library) return;
   const data = getCached<GlossaryData>(coverID, library);
   if (!data?.items?.length) return;
 
